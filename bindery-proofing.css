@@ -1,0 +1,1188 @@
+/* ════════════════════════════════════════════════════════════
+   Bindery Proofing — standalone styles
+   Not part of the Platinum design system. Values are taken from
+   Tailwind's scales (spacing, gray palette, type, radius, shadow)
+   and kept here as custom properties so they're easy to find.
+   Sections below follow the component order in index.html.
+   ════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Neutrals — Tailwind gray */
+  --gray-50:  #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-900: #111827;
+
+  /* Single accent — Tailwind cyan */
+  --accent-50:  #ecfeff;
+  --accent-100: #cffafe;
+  --accent-500: #06b6d4;
+  --accent-600: #0891b2;
+  --accent-700: #0e7490;
+
+  /* Status */
+  --red-50:  #fef2f2;
+  --red-500: #ef4444;
+  --red-600: #dc2626;
+  --emerald-500: #10b981;
+  --amber-50:    #fffbeb;
+  --amber-300:   #fcd34d;
+  --amber-500:   #f59e0b;
+  --amber-700:   #b45309;
+
+  /* Semantic */
+  --page-bg:       var(--gray-50);
+  --surface:       #ffffff;
+  --surface-sunk:  var(--gray-50);
+  --text:          var(--gray-900);
+  --text-muted:    var(--gray-500);
+  --text-faint:    var(--gray-400);
+  --border:        var(--gray-200);
+  --border-strong: var(--gray-300);
+
+  /* Spacing — Tailwind 1 = 4px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Type */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-2xl: 24px;
+
+  /* Shape & depth */
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+  --shadow-xs: 0 1px 2px 0 rgb(17 24 39 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(17 24 39 / 0.06), 0 1px 2px -1px rgb(17 24 39 / 0.06);
+  --ring: 0 0 0 3px rgb(6 182 212 / 0.2);
+
+  --field-height: 40px;
+  --transition: 150ms ease-out;
+}
+
+
+/* ── Page shell ── */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+/* Form scrolls above; the footer dock stays pinned at the bottom */
+body {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  background: var(--page-bg);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-16) var(--space-6);
+}
+
+.proof-form {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-10);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+
+/* ── Field (shared text input + select) ── */
+
+.field {
+  height: var(--field-height);
+  min-width: 0;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font: inherit;
+  color: var(--text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.field::placeholder { color: var(--text-faint); }
+
+.field:hover:not(:disabled) { border-color: var(--gray-400); }
+
+.field:focus {
+  outline: none;
+  border-color: var(--accent-500);
+  box-shadow: var(--ring);
+}
+
+.field:disabled {
+  background: var(--gray-100);
+  border-color: var(--border);
+  box-shadow: none;
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+.field--compact { width: 140px; }
+
+.field[aria-invalid="true"] {
+  border-color: var(--red-500);
+  background: var(--red-50);
+}
+
+.field[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px rgb(239 68 68 / 0.15); }
+
+.field-error {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--red-600);
+}
+
+.field-warning {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--amber-700);
+}
+
+.field-warning[hidden] { display: none; }
+
+
+
+/* ── JobInfo ── */
+
+.job-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.job-info__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.job-info__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.job-info__meta {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.job-info__body {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+
+.job-info__field { flex: 1 1 0; min-width: 0; }
+.job-info__field--wide { flex-grow: 2; }
+
+
+/* Small square icon button (Settings, dialog close) */
+.icon-btn {
+  flex: none;
+  width: var(--field-height);
+  height: var(--field-height);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.icon-btn:hover { background: var(--gray-100); color: var(--gray-700); }
+.icon-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+
+/* ── SettingsDialog ── */
+
+.settings-dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: min(640px, calc(100vh - 64px));
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 20px 25px -5px rgb(17 24 39 / 0.1), 0 8px 10px -6px rgb(17 24 39 / 0.08);
+}
+
+.settings-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.settings-dialog::backdrop { background: rgb(17 24 39 / 0.3); }
+
+.settings-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-dialog__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.settings-dialog__header .icon-btn { width: 32px; height: 32px; border-color: transparent; }
+
+/* Whole row is clickable */
+.settings-dialog__toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.settings-dialog__toggle input {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--accent-600);
+}
+
+.settings-dialog__toggle-label { display: block; font-weight: 500; }
+.settings-dialog__hint { display: block; font-size: var(--text-xs); color: var(--text-muted); }
+
+
+/* ── SavedList ── */
+
+.saved-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.saved-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.saved-list__title {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.saved-list__clear {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-xs);
+  color: var(--red-600);
+  cursor: pointer;
+}
+
+.saved-list__clear:disabled { color: var(--text-faint); cursor: default; }
+
+.saved-list__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.saved-list__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 30px;
+  padding: 0 var(--space-1) 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.saved-list__remove {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: inherit;
+  font-size: var(--text-xs);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.saved-list__remove:hover { opacity: 1; background: var(--red-50); color: var(--red-600); }
+.saved-list__remove:focus-visible { outline: none; opacity: 1; box-shadow: var(--ring); }
+
+.saved-list__empty { margin: 0; font-size: var(--text-xs); color: var(--text-faint); }
+.saved-list__empty[hidden] { display: none; }
+
+
+/* ── DataSourceStatus (prototype only) ── */
+
+.data-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.data-status { transition: opacity 400ms ease-out; }
+.data-status.is-dismissed { opacity: 0; }
+.data-status[hidden] { display: none; }
+
+.data-status__icon { color: var(--text-faint); }
+.data-status[data-state="live"] .data-status__icon { color: var(--emerald-500); }
+.data-status[data-state="fallback"] .data-status__icon { color: var(--amber-500); }
+.data-status[data-state="error"],
+.data-status[data-state="error"] .data-status__icon { color: var(--red-600); }
+
+
+/* ── OptionList / OptionCard ── */
+
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.option-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  /* no overflow:hidden — suggestion lists must escape the card */
+}
+
+.option-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--border);
+}
+
+.option-card__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background: var(--accent-50);
+  color: var(--accent-600);
+  border: solid 1px var(--accent-500);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+
+
+.option-card__actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+/* Shared icon button in the option header (Duplicate, Delete) */
+.option-card__action {
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+}
+
+.option-card__action:hover:not(:disabled) {
+  color: var(--gray-700);
+  background: var(--gray-100);
+}
+
+.option-card__delete:hover:not(:disabled) {
+  color: var(--red-600);
+  background: var(--red-50);
+  border-color: rgb(239 68 68 / 0.2);
+}
+
+.option-card__action:focus-visible { outline: none; box-shadow: var(--ring); }
+
+.option-card__action:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.option-card__body {
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* ── OptionSection (Binding Types / Materials / Features) ──
+   Stacked inside the card, separated by hairlines instead of
+   nested boxes. */
+
+.option-section {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border: none;
+}
+
+.option-section + .option-section { border-top: 1px solid var(--gray-100); }
+
+.option-section__title {
+  float: left; /* lets the legend sit in the flow like a heading */
+  width: 100%;
+  padding: 0;
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.option-section__rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.option-section__rows:empty { display: none; }
+
+
+/* ── SpecRow (shared row layout) ── */
+
+.spec-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.spec-row__text {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.row-remove {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+}
+
+.row-remove:hover {
+  color: var(--red-600);
+  background: var(--red-50);
+}
+
+.row-remove:focus-visible { outline: none; box-shadow: var(--ring); }
+
+
+/* ── BindingRow ── */
+
+.binding-row__type { width: 200px; flex: none; }
+.binding-row__count { width: 140px; flex: none; }
+
+/* Top-align so messages under the size field don't shift the rest of the row */
+.binding-row { align-items: flex-start; }
+.binding-row .spec-row__text { line-height: var(--field-height); }
+.binding-row .row-remove { margin-top: var(--space-1); }
+
+.binding-row__sizes {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.binding-row__sizes .field-error,
+.binding-row__sizes .field-warning { padding-left: var(--space-1); }
+
+
+/* ── SizeChipInput ──
+   Looks like one field; chips and the text input wrap inside it. */
+
+.chip-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  height: auto;
+  min-height: var(--field-height);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-1);
+  cursor: text;
+}
+
+.chip-input:focus-within {
+  border-color: var(--accent-500);
+  box-shadow: var(--ring);
+}
+
+.chip-input:has(.chip-input__input[aria-invalid="true"]) {
+  border-color: var(--red-500);
+  background: var(--red-50);
+}
+
+.chip-input__combobox {
+  flex: 1 1 120px;
+  min-width: 120px;
+}
+
+/* The input inside drops its own field styling — the wrapper is the field */
+.chip-input__input {
+  width: 100%;
+  height: 30px;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--text);
+}
+
+.chip-input__input::placeholder { color: var(--text-faint); }
+.chip-input__input:focus { outline: none; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 30px;
+  padding: 0 var(--space-1) 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--gray-100);
+  font-weight: 500;
+  color: var(--gray-700);
+  white-space: nowrap;
+}
+
+.chip__count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Parens are drawn by CSS so editing touches only the number; "( )" shows when empty */
+.chip__count::before { content: "("; }
+.chip__count::after { content: ")"; }
+.chip__count:empty { opacity: 0.45; }
+.chip__count:empty::before { content: "( "; }
+
+/* Editable parts of a chip */
+.chip__count,
+.chip__label {
+  border-radius: var(--radius-md);
+  padding: 0 2px;
+  cursor: text;
+  outline: none;
+}
+
+.chip__count:hover,
+.chip__label:hover { background: rgb(17 24 39 / 0.06); }
+
+.chip__count:focus,
+.chip__label:focus {
+  background: var(--surface);
+  box-shadow: var(--ring);
+}
+
+.chip__warning-icon { display: none; font-size: var(--text-xs); }
+
+.chip--warning {
+  border-color: var(--amber-300);
+  background: var(--amber-50);
+  color: var(--amber-700);
+}
+
+.chip--warning .chip__warning-icon { display: inline; }
+
+.chip__remove {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: inherit;
+  font-size: var(--text-xs);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.chip__remove:hover { opacity: 1; background: rgb(17 24 39 / 0.08); }
+.chip__remove:focus-visible { outline: none; opacity: 1; box-shadow: var(--ring); }
+
+
+/* ── MaterialRow ── */
+
+.material-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.material-row__main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.material-row__material { flex: 1 1 0; }
+.material-row__function { width: 200px; flex: none; }
+
+/* Detail pick (e.g. Bookcloth) — sits between Material and Function,
+   wider than Material because bookcloth names are long */
+.material-row__detail {
+  flex: 1.6 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.material-row__detail[hidden] { display: none; }
+.material-row__detail .field-error { padding-left: var(--space-1); }
+
+/* Top-align so an error under the detail field doesn't shift the others */
+.material-row__main { align-items: flex-start; }
+.material-row__main .row-remove { margin-top: var(--space-1); }
+
+
+/* ── Combobox (type-ahead with suggestions) ── */
+
+.combobox {
+  position: relative;
+  min-width: 0;
+}
+
+.combobox__input {
+  width: 100%;
+  padding-right: var(--space-10);
+  /* chevron hint, gray-400 */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%239ca3af'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-position: right var(--space-3) center;
+  background-size: 18px;
+  background-repeat: no-repeat;
+}
+
+.combobox.is-open .combobox__input { border-color: var(--accent-500); box-shadow: var(--ring); }
+
+.combobox__listbox {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  right: 0;
+  min-width: 220px;
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: 0 10px 15px -3px rgb(17 24 39 / 0.08), 0 4px 6px -4px rgb(17 24 39 / 0.06);
+}
+
+.combobox__listbox[hidden] { display: none; }
+
+.combobox__option {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.combobox__option:hover,
+.combobox__option.is-active { background: var(--gray-100); }
+
+.combobox__option[aria-selected="true"] {
+  font-weight: 500;
+  color: var(--accent-700);
+}
+
+.combobox__match {
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--accent-500);
+  text-underline-offset: 2px;
+}
+
+.combobox__group {
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+.combobox__empty,
+.combobox__more {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.combobox__more { border-top: 1px solid var(--gray-100); margin-top: var(--space-1); }
+
+
+/* ── FeatureToggles ── */
+
+.feature-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-8);
+}
+
+.feature-toggles__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.feature-toggles__label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.feature-toggles__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--gray-100);
+  font: inherit;
+  font-weight: 500;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.toggle-btn:hover { background: var(--gray-200); }
+.toggle-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+.toggle-btn__check { display: none; font-size: var(--text-xs); }
+
+.toggle-btn[aria-pressed="true"] {
+  border-color: var(--accent-500);
+  background: var(--accent-50);
+  color: var(--accent-700);
+}
+
+.toggle-btn[aria-pressed="true"] .toggle-btn__check { display: inline; }
+
+
+/* ── AddButton ── */
+
+.add-btn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--gray-100);
+  font: inherit;
+  font-weight: 500;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.add-btn:hover { background: var(--accent-50); color: var(--accent-700); }
+.add-btn:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* Add Option — full-width */
+.add-btn--block {
+  align-self: stretch;
+  justify-content: center;
+  height: 48px;
+  border-radius: var(--radius-xl);
+}
+
+
+
+
+/* ── DragHandle + sortable states (sortable.js) ── */
+
+.drag-handle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: var(--field-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:hover { color: var(--gray-700); background: var(--gray-100); }
+.drag-handle:active { cursor: grabbing; }
+.drag-handle:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* Smaller grip inside a size chip */
+.chip__handle {
+  width: 14px;
+  height: 22px;
+  margin-left: calc(var(--space-2) * -1);
+  font-size: 10px;
+}
+
+/* Footer bar grip sits next to the option name */
+.footer-preview__bar .drag-handle { height: 28px; }
+.footer-preview__bar { justify-content: flex-start; }
+.footer-preview__save { margin-left: auto; }
+
+/* The item being dragged stays in place as a faded placeholder */
+[data-sortable-item].is-dragging { opacity: 0.35; }
+
+
+/* ── CustomFeature ── */
+
+.custom-feature {
+  display: flex;
+  gap: var(--space-2);
+  width: 320px;
+  max-width: 100%;
+}
+
+.custom-feature__input { flex: 1; }
+.custom-feature .add-btn { height: var(--field-height); }
+
+
+/* ── FooterDock ── */
+
+.footer-dock {
+  --footer-width: 10in;   /* set from the Width field by proof-footer.js */
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  max-height: 45vh;
+  border-top: 1px solid var(--border);
+  background: var(--gray-100);
+  box-shadow: 0 -4px 12px rgb(17 24 39 / 0.06);
+}
+
+.footer-dock__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-6);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.footer-dock__title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.footer-dock__width {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+}
+
+.footer-dock__width-input {
+  width: 80px;
+  height: 32px;
+  padding: 0 var(--space-2);
+}
+
+.footer-dock__toggle {
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: transform var(--transition), background var(--transition);
+}
+
+.footer-dock__toggle:hover { background: var(--gray-100); }
+.footer-dock__toggle:focus-visible { outline: none; box-shadow: var(--ring); }
+.footer-dock__toggle[aria-expanded="false"] { transform: rotate(180deg); }
+
+.footer-dock__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-6);
+  overflow: auto;
+}
+
+.footer-dock.is-collapsed .footer-dock__list { display: none; }
+
+
+/* ── FooterPreview ── */
+
+.footer-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: max-content;   /* bar lines up with the footer's set width */
+}
+
+.footer-preview__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.footer-preview__name {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.footer-preview__save {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 28px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.footer-preview__save:hover { background: var(--accent-50); color: var(--accent-700); }
+.footer-preview__save:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* White "paper" so the transparent footer reads as it will on a proof */
+.footer-preview__paper {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+
+/* ── ProofFooter (the PDF) ──
+   Print units (in/pt). Sections are flex items that wrap and stretch,
+   so the same footer works at any width. Empty sections are [hidden]. */
+
+.proof-footer {
+  width: var(--footer-width);
+  padding: 0.08in 0.12in;
+  font-family: var(--font-sans);
+  font-size: 7.5pt;
+  line-height: 1.3;
+  color: #111111;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.proof-footer__sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3pt;
+}
+
+/* Each item is a bordered box. Job info boxes size to their content;
+   the content boxes take a bigger share of whatever width is left. */
+.proof-footer__section {
+  flex: 1 1 1.6in;
+  min-width: 1.1in;
+  padding: 3pt 5pt 4pt;
+  border: 0.5pt solid #9a9a9a;
+}
+
+/* Job box sizes to its text */
+.proof-footer__section--job {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.proof-footer__value[hidden] { display: none; }
+
+.proof-footer__section--wide { flex: 2 1 2.4in; }
+.proof-footer__section[hidden] { display: none; }
+
+.proof-footer__label {
+  margin: 0 0 1pt;
+  font-size: 6pt;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666666;
+}
+
+/* pre-wrap: sheet values (e.g. customer-facing names) print exactly as written, spaces included */
+.proof-footer__value,
+.proof-footer__item { white-space: pre-wrap; }
+
+.proof-footer__value {
+  margin: 0;
+  font-weight: 600;
+}
+
+.proof-footer__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proof-footer__list--bullets {
+  padding-left: 8pt;
+  list-style: disc;
+}
+
+
+/* ── Print: only the footer being saved ── */
+
+@media print {
+  body.is-printing-footer {
+    display: block;
+    height: auto;
+    background: none;
+  }
+
+  body.is-printing-footer > :not(.footer-dock) { display: none !important; }
+
+  .is-printing-footer .footer-dock {
+    display: block;
+    max-height: none;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .is-printing-footer .footer-dock__toolbar,
+  .is-printing-footer .footer-preview__bar,
+  .is-printing-footer .footer-preview:not(.is-printing) { display: none !important; }
+
+  .is-printing-footer .footer-dock__list {
+    display: block;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .is-printing-footer .footer-preview__paper {
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+}
+
+
+/* ── Small screens ── */
+
+@media (max-width: 640px) {
+  .main { padding: var(--space-8) var(--space-4); }
+  .job-info__meta { width: 100%; }
+  .job-info__meta .field { flex: 1; width: auto; }
+  .job-info__body { flex-direction: column; }
+  .job-info__field { flex: none; }
+  .binding-row { flex-wrap: wrap; }
+  .binding-row__type { width: auto; flex: 1 1 100%; }
+  .binding-row__count { width: auto; flex: 1 1 0; }
+  .binding-row__sizes { flex: 1 1 100%; order: 1; }
+  .material-row__main { flex-wrap: wrap; }
+  .material-row__material { flex: 1 1 100%; }
+  .material-row__function { width: auto; flex: 1; }
+  .material-row__detail { flex: 1 1 100%; order: 1; }
+  .material-row__function,
+  .material-row__main .row-remove { order: 2; }
+}

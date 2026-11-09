@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bindery Proofing</title>
+  <script src="https://kit.fontawesome.com/da08280601.js" crossorigin="anonymous"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="bindery-proofing.css" />
+</head>
+
+<body>
+  <main class="main">
+    <form class="proof-form" id="proof-form" novalidate>
+
+      <!-- ════════════ JobInfo ════════════ -->
+      <section class="job-info" aria-labelledby="job-info-title">
+        <div class="job-info__header">
+          <h1 class="job-info__title" id="job-info-title">Create Proof Slip</h1>
+          <div class="job-info__meta">
+            <label class="visually-hidden" for="job-number">Job Number</label>
+            <input class="field field--compact" id="job-number" name="jobNumber" type="text" placeholder="Job Number" />
+            <label class="visually-hidden" for="designer">Designer</label>
+            <input class="field field--compact" id="designer" name="designer" type="text" placeholder="Designer" />
+            <button type="button" class="icon-btn" id="settings-open" aria-label="Settings" title="Settings" aria-haspopup="dialog">
+              <i class="fa-solid fa-gear" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="job-info__body">
+          <!-- Management Group / Customer: free text, with suggestions saved in this browser (saved-suggestions.js) -->
+          <label class="visually-hidden" for="management-group">Management Group</label>
+          <div class="combobox job-info__field" data-combobox data-freeform data-source="savedManagementGroup">
+            <input class="field combobox__input" id="management-group" name="managementGroup" type="text" placeholder="Management Group"
+              role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+            <ul class="combobox__listbox" role="listbox" hidden></ul>
+          </div>
+          <label class="visually-hidden" for="customer">Customer</label>
+          <div class="combobox job-info__field" data-combobox data-freeform data-source="savedCustomer">
+            <input class="field combobox__input" id="customer" name="customer" type="text" placeholder="Customer"
+              role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+            <ul class="combobox__listbox" role="listbox" hidden></ul>
+          </div>
+          <label class="visually-hidden" for="job-description">Job Description</label>
+          <input class="field job-info__field job-info__field--wide" id="job-description" name="jobDescription" type="text" placeholder="Job Description" />
+        </div>
+
+        <!-- DataSourceStatus — prototype only: shows where the suggestion lists came from -->
+        <p class="data-status" id="data-status" data-state="loading" role="status">
+          <i class="fa-solid fa-circle-notch fa-spin data-status__icon" aria-hidden="true"></i>
+          <span class="data-status__text">Loading lists from the spreadsheet…</span>
+        </p>
+      </section>
+      <!-- ════════════ /JobInfo ════════════ -->
+
+
+      <!-- ════════════ OptionList ════════════ -->
+      <div class="option-list" id="option-list">
+
+        <!-- ──────── OptionCard (Option 1 — same structure as #tpl-option-card) ──────── -->
+        <section class="option-card" data-option>
+          <header class="option-card__header">
+            <h2 class="option-card__title" data-option-title>Option 1</h2>
+            <div class="option-card__actions">
+              <button type="button" class="option-card__action" data-action="duplicate-option" aria-label="Duplicate Option 1" title="Duplicate">
+                <i class="fa-solid fa-copy" aria-hidden="true"></i>
+              </button>
+              <button type="button" class="option-card__action option-card__delete" data-action="remove-option" aria-label="Delete Option 1" title="Delete">
+                <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+              </button>
+            </div>
+          </header>
+
+          <div class="option-card__body">
+            <!-- Each section starts with no rows; "Add …" clones the row templates below -->
+
+            <!-- BindingTypesSection -->
+            <fieldset class="option-section">
+              <legend class="option-section__title">Binding Types</legend>
+              <div class="option-section__rows" data-rows="binding" data-sortable></div>
+              <button type="button" class="add-btn" data-action="add-row" data-row-type="binding">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Binding Type
+              </button>
+            </fieldset>
+
+            <!-- MaterialsSection -->
+            <fieldset class="option-section">
+              <legend class="option-section__title">Materials</legend>
+              <div class="option-section__rows" data-rows="material" data-sortable></div>
+              <button type="button" class="add-btn" data-action="add-row" data-row-type="material">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Material
+              </button>
+            </fieldset>
+
+            <!-- FeaturesSection -->
+            <fieldset class="option-section">
+              <legend class="option-section__title">Features</legend>
+              <!-- FeatureToggles — one toggle per feature, grouped by Type (filled from the sheet) -->
+              <div class="feature-toggles" data-feature-toggles></div>
+            </fieldset>
+
+          </div>
+        </section>
+        <!-- ──────── /OptionCard ──────── -->
+
+      </div>
+      <!-- ════════════ /OptionList ════════════ -->
+
+      <button type="button" class="add-btn add-btn--block" data-action="add-option">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Option
+      </button>
+    </form>
+  </main>
+
+
+  <!-- ════════════ SettingsDialog ════════════ -->
+  <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+    <header class="settings-dialog__header">
+      <h2 class="settings-dialog__title" id="settings-title">Settings</h2>
+      <button type="button" class="icon-btn" data-action="close-settings" aria-label="Close settings">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <label class="settings-dialog__toggle">
+      <input type="checkbox" id="settings-suggestions-enabled" />
+      <span>
+        <span class="settings-dialog__toggle-label">Remember management groups and customers</span>
+        <span class="settings-dialog__hint">Saved in this browser only and suggested as you type.</span>
+      </span>
+    </label>
+
+    <!-- SavedList (one per field) -->
+    <section class="saved-list" data-saved-list="managementGroup">
+      <div class="saved-list__header">
+        <h3 class="saved-list__title">Management groups</h3>
+        <button type="button" class="saved-list__clear" data-action="clear-saved">Clear all</button>
+      </div>
+      <ul class="saved-list__items"></ul>
+      <p class="saved-list__empty">Nothing saved yet.</p>
+    </section>
+    <section class="saved-list" data-saved-list="customer">
+      <div class="saved-list__header">
+        <h3 class="saved-list__title">Customers</h3>
+        <button type="button" class="saved-list__clear" data-action="clear-saved">Clear all</button>
+      </div>
+      <ul class="saved-list__items"></ul>
+      <p class="saved-list__empty">Nothing saved yet.</p>
+    </section>
+  </dialog>
+  <!-- ════════════ /SettingsDialog ════════════ -->
+
+
+  <!-- ════════════ FooterDock — live proof footer previews ════════════ -->
+  <aside class="footer-dock" id="footer-dock" aria-labelledby="footer-dock-title">
+    <div class="footer-dock__toolbar">
+      <h2 class="footer-dock__title" id="footer-dock-title">Proof Footers</h2>
+      <label class="footer-dock__width">
+        <span>Width</span>
+        <input class="field footer-dock__width-input" id="footer-width" type="number" min="2" max="40" step="0.125" value="10" />
+        <span>in</span>
+      </label>
+      <button type="button" class="footer-dock__toggle" id="footer-dock-toggle" aria-expanded="true" aria-controls="footer-list">
+        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        <span class="visually-hidden">Show or hide footers</span>
+      </button>
+    </div>
+    <!-- one #tpl-footer-preview per option, rebuilt as you edit -->
+    <div class="footer-dock__list" id="footer-list" data-sortable></div>
+  </aside>
+  <!-- ════════════ /FooterDock ════════════ -->
+
+
+  <!-- ════════════════════════════════════════════════════════════
+       Templates — cloned by bindery-proofing.js. In Angular each
+       becomes a component (Combobox) or the body of an @for block.
+       ════════════════════════════════════════════════════════════ -->
+
+  <!-- BindingRow -->
+  <template id="tpl-binding">
+    <div class="spec-row binding-row" data-row data-sortable-item>
+      <!-- DragHandle (sortable.js) -->
+      <button type="button" class="drag-handle" data-drag-handle aria-label="Drag to reorder binding type">
+        <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
+      </button>
+      <!-- Combobox -->
+      <div class="combobox binding-row__type" data-combobox data-source="bindingTypes">
+        <input class="field combobox__input" name="bindingType" type="text" placeholder="Binding Type" aria-label="Binding type"
+          role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+        <ul class="combobox__listbox" role="listbox" hidden></ul>
+      </div>
+      <!-- /Combobox -->
+      <span class="spec-row__text" data-holds>holds</span>
+      <!-- Insert count: any text, with "Variable" offered as a suggestion -->
+      <div class="combobox binding-row__count" data-combobox data-freeform data-source="insertCount">
+        <input class="field combobox__input" name="insertCount" type="text" placeholder="Insert Count" aria-label="Insert count"
+          role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+        <ul class="combobox__listbox" role="listbox" hidden></ul>
+      </div>
+      <!-- SizeChipInput — type or pick a size, Enter adds it as a chip (any valid W x H, not just the list) -->
+      <div class="binding-row__sizes">
+        <div class="field chip-input" data-chip-input data-sortable data-axis="x">
+          <!-- chips (#tpl-size-chip) are inserted here, before the combobox -->
+          <div class="combobox chip-input__combobox" data-combobox data-freeform data-source="sizes">
+            <input class="combobox__input chip-input__input" name="insertSize" type="text" placeholder="Insert Size" aria-label="Insert sizes"
+              role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+            <ul class="combobox__listbox" role="listbox" hidden></ul>
+          </div>
+        </div>
+        <p class="field-error" data-size-error hidden>Enter a size like 8.5 x 11 or 8.5 x 11 folded.</p>
+        <p class="field-warning" data-size-warning hidden>
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <span data-size-warning-text></span>
+        </p>
+      </div>
+      <!-- /SizeChipInput -->
+      <span class="spec-row__text" data-inserts>inserts</span>
+      <button type="button" class="row-remove" data-action="remove-row" aria-label="Remove binding type">
+        <i class="fa-solid fa-minus" aria-hidden="true"></i>
+      </button>
+    </div>
+  </template>
+
+  <!-- MaterialRow -->
+  <template id="tpl-material">
+    <div class="spec-row material-row" data-row data-sortable-item>
+      <div class="material-row__main">
+        <button type="button" class="drag-handle" data-drag-handle aria-label="Drag to reorder material">
+          <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
+        </button>
+        <div class="combobox material-row__material" data-combobox data-source="materials">
+          <input class="field combobox__input" name="material" type="text" placeholder="Material" aria-label="Material"
+            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+          <ul class="combobox__listbox" role="listbox" hidden></ul>
+        </div>
+        <!-- MaterialDetail — shown only when the material has a Detail List (e.g. Bookcloth) -->
+        <div class="material-row__detail" hidden>
+          <label class="visually-hidden" data-detail-label>Bookcloth</label>
+          <div class="combobox" data-combobox data-source="detail">
+            <input class="field combobox__input material-row__detail-input" name="materialDetail" type="text" placeholder="Search by name or swatch #"
+              role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+            <ul class="combobox__listbox" role="listbox" hidden></ul>
+          </div>
+          <p class="field-error" data-detail-error hidden>Pick a bookcloth from the list.</p>
+        </div>
+        <!-- Function suggestions = functions the chosen material is eligible for -->
+        <div class="combobox material-row__function" data-combobox data-source="functions">
+          <input class="field combobox__input" name="function" type="text" placeholder="Function" aria-label="Function"
+            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" disabled />
+          <ul class="combobox__listbox" role="listbox" hidden></ul>
+        </div>
+        <button type="button" class="row-remove" data-action="remove-row" aria-label="Remove material">
+          <i class="fa-solid fa-minus" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </template>
+
+  <!-- FeatureToggleGroup (one per Type: Decorations, Features) -->
+  <template id="tpl-feature-group">
+    <div class="feature-toggles__group" role="group" aria-label="Decorations" data-type="Decoration">
+      <span class="feature-toggles__label">Decorations</span>
+      <div class="feature-toggles__buttons"></div>
+      <!-- CustomFeature — adds a toggle of this type to every option on this slip -->
+      <div class="custom-feature">
+        <input class="field custom-feature__input" type="text" placeholder="Custom decoration" aria-label="Custom decoration" />
+        <button type="button" class="add-btn" data-action="save-custom-feature">Save</button>
+      </div>
+    </div>
+  </template>
+
+  <!-- FeatureToggle -->
+  <template id="tpl-feature-toggle">
+    <button type="button" class="toggle-btn" data-feature aria-pressed="false">
+      <i class="fa-solid fa-check toggle-btn__check" aria-hidden="true"></i>
+      <span class="toggle-btn__label">Deboss</span>
+    </button>
+  </template>
+
+  <!-- SizeChip -->
+  <template id="tpl-size-chip">
+    <span class="chip" data-chip data-sortable-item>
+      <button type="button" class="drag-handle chip__handle" data-drag-handle aria-label="Drag to reorder size" tabindex="-1">
+        <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
+      </button>
+      <i class="fa-solid fa-triangle-exclamation chip__warning-icon" aria-hidden="true"></i>
+      <!-- Count and size are editable in place: click, type, Enter (Esc cancels).
+           tabindex -1 keeps them out of the Count → Size tab order. Parens come from CSS. -->
+      <span class="chip__count" contenteditable="plaintext-only" spellcheck="false" tabindex="-1"
+        role="textbox" aria-label="Insert count">2</span>
+      <span class="chip__label" contenteditable="plaintext-only" spellcheck="false" tabindex="-1"
+        role="textbox" aria-label="Insert size">8.5 x 11</span>
+      <!-- tabindex -1: Tab goes Count → Size without stopping on chips; Backspace removes the last chip -->
+      <button type="button" class="chip__remove" data-action="remove-chip" aria-label="Remove (2) 8.5 x 11" tabindex="-1">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </span>
+  </template>
+
+  <!-- Combobox suggestion parts (filled from the sheet data) -->
+  <template id="tpl-combobox-group">
+    <li class="combobox__group" role="presentation">Decorations</li>
+  </template>
+  <template id="tpl-combobox-option">
+    <li class="combobox__option" role="option" aria-selected="false">Option text</li>
+  </template>
+  <template id="tpl-combobox-empty">
+    <li class="combobox__empty" role="presentation">No matches</li>
+  </template>
+  <template id="tpl-combobox-more">
+    <li class="combobox__more" role="presentation">Keep typing to see more</li>
+  </template>
+
+  <!-- FooterPreview: toolbar + the footer itself (what gets saved as PDF) -->
+  <template id="tpl-footer-preview">
+    <div class="footer-preview" data-sortable-item>
+      <div class="footer-preview__bar">
+        <!-- drag to reorder options (reorders the option cards too) -->
+        <button type="button" class="drag-handle" data-drag-handle aria-label="Drag to reorder option">
+          <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
+        </button>
+        <span class="footer-preview__name" data-preview-name>Option 1</span>
+        <button type="button" class="footer-preview__save" data-action="save-pdf">
+          <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Save PDF
+        </button>
+      </div>
+      <div class="footer-preview__paper">
+
+        <!-- ──── ProofFooter (print output) ──── -->
+        <article class="proof-footer" data-footer>
+          <!-- Every item is a bordered section; they sit side by side and wrap.
+               Lists get .proof-footer__list--bullets when they have more than one item. -->
+          <div class="proof-footer__sections">
+            <!-- Job: "Mgmt Group / Customer" and "Job # - Description - Option N" — blanks are left out -->
+            <section class="proof-footer__section proof-footer__section--job">
+              <p class="proof-footer__value" data-f-line="customer">Omni / Omni Hotels</p>
+              <p class="proof-footer__value" data-f-line="job">25-10422 - Banquet menu covers - Option 1</p>
+            </section>
+            <section class="proof-footer__section" data-f-section="material">
+              <h3 class="proof-footer__label">Material</h3>
+              <ul class="proof-footer__list" data-f-list></ul>
+            </section>
+            <section class="proof-footer__section" data-f-section="inserts">
+              <h3 class="proof-footer__label">Inserts</h3>
+              <ul class="proof-footer__list" data-f-list></ul>
+            </section>
+            <!-- one #tpl-footer-type-section per feature type (Decorations, Features…) goes here -->
+          </div>
+        </article>
+        <!-- ──── /ProofFooter ──── -->
+
+      </div>
+    </div>
+  </template>
+
+  <!-- FooterTypeSection: label = the feature type from the sheet, pluralized -->
+  <template id="tpl-footer-type-section">
+    <section class="proof-footer__section" data-f-section="type">
+      <h3 class="proof-footer__label">Decorations</h3>
+      <ul class="proof-footer__list" data-f-list></ul>
+    </section>
+  </template>
+
+  <template id="tpl-footer-item">
+    <li class="proof-footer__item">Front: Bookcloth — Majilite (50)</li>
+  </template>
+
+  <!-- SavedItem (Settings dialog) -->
+  <template id="tpl-saved-item">
+    <li class="saved-list__item">
+      <span class="saved-list__text">Omni</span>
+      <button type="button" class="saved-list__remove" data-action="remove-saved" aria-label="Remove Omni">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </li>
+  </template>
+
+  <!-- OptionCard -->
+  <template id="tpl-option-card">
+    <section class="option-card" data-option>
+      <header class="option-card__header">
+        <h2 class="option-card__title" data-option-title>Option</h2>
+        <div class="option-card__actions">
+          <button type="button" class="option-card__action" data-action="duplicate-option" aria-label="Duplicate option" title="Duplicate">
+            <i class="fa-solid fa-copy" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="option-card__action option-card__delete" data-action="remove-option" aria-label="Delete option" title="Delete">
+            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+          </button>
+        </div>
+      </header>
+      <div class="option-card__body">
+        <fieldset class="option-section">
+          <legend class="option-section__title">Binding Types</legend>
+          <div class="option-section__rows" data-rows="binding" data-sortable></div>
+          <button type="button" class="add-btn" data-action="add-row" data-row-type="binding">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Binding Type
+          </button>
+        </fieldset>
+        <fieldset class="option-section">
+          <legend class="option-section__title">Materials</legend>
+          <div class="option-section__rows" data-rows="material" data-sortable></div>
+          <button type="button" class="add-btn" data-action="add-row" data-row-type="material">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Material
+          </button>
+        </fieldset>
+        <fieldset class="option-section">
+          <legend class="option-section__title">Features</legend>
+          <div class="feature-toggles" data-feature-toggles></div>
+        </fieldset>
+      </div>
+    </section>
+  </template>
+
+
+  <!-- Data source config + loader, then page behavior -->
+  <script src="sheet-config.js"></script>
+  <script src="sheet-data.js"></script>
+  <script src="size-format.js"></script>
+  <script src="combobox.js"></script>
+  <script src="sortable.js"></script>
+  <script src="saved-suggestions.js"></script>
+  <script src="bindery-proofing.js"></script>
+  <script src="proof-footer.js"></script>
+
+  <!--
+  ════════════════════════════════════════════════════════════════
+  Implementation notes
+  ────────────────────────────────────────────────────────────────
+  Components (HTML here → CSS in bindery-proofing.css):
+    JobInfo           → section.job-info            → .job-info, .field
+    OptionList        → div#option-list              → .option-list
+    OptionCard        → section.option-card          → .option-card
+    BindingTypesSection / MaterialsSection / FeaturesSection
+                      → fieldset.option-section      → .option-section, .add-btn
+    BindingRow        → #tpl-binding                 → .spec-row, .binding-row
+    MaterialRow       → #tpl-material                → .material-row (+ __detail)
+    FeatureToggles    → #tpl-feature-group / #tpl-feature-toggle → .feature-toggles, .toggle-btn
+    Combobox          → div.combobox [data-combobox] → .combobox (type-ahead, combobox.js)
+    SizeChipInput     → .binding-row__sizes + #tpl-size-chip → .chip-input, .chip (size-format.js)
+    SettingsDialog    → dialog#settings-dialog + #tpl-saved-item → .settings-dialog, .saved-list
+    DragHandle        → button[data-drag-handle] in rows, chips, footer bars → .drag-handle (sortable.js)
+    CustomFeature     → .custom-feature (in each #tpl-feature-group) → .custom-feature (slip-only toggle of that type)
+    FooterDock        → aside.footer-dock            → .footer-dock (width control + previews)
+    FooterPreview     → #tpl-footer-preview          → .footer-preview
+    ProofFooter       → article.proof-footer         → .proof-footer (flexbox; this is the PDF)
+
+  Simulated in JS → Angular state/events:
+    • add/remove rows and options        → arrays in a FormArray + @for (all start empty)
+    • "Option N" renumbering             → $index + 1
+    • Combobox filtering + keyboard nav  → a Combobox component (input + listbox)
+    • Feature toggles (aria-pressed)     → a selected-features array per option
+    • Size chips: parse/format/validate  → size-format.js as a pipe + validator;
+                                           chips = a sizes array per binding row
+    • Function suggestions by Material   → computed from the material's eligibility
+    • Bookcloth detail field show/hide   → @if (material.detailList)
+    • Value must match a suggestion      → validator against the list
+    • Drag & drop reorder (sortable.js)  → Angular CDK drag-drop (cdkDropList/cdkDrag/cdkDragHandle)
+    • Saved Mgmt Group / Customer        → localStorage via saved-suggestions.js (a settings service)
+    • Duplicate option                   → copy the option's form value and insert it after
+    • Live footer (proof-footer.js)      → a computed view of the form model per option
+    • Save PDF (window.print + @page)    → same approach as the MCS; @page size is
+                                           injected per footer because it's dynamic
+
+  Data (sheet-data.js) → becomes a real API/service:
+    Google Sheet tabs: materials, binding_types, features, bookcloth.
+    Falls back to the CSV snapshots in data/ if the sheet can't be reached.
+  ════════════════════════════════════════════════════════════════
+  -->
+</body>
+
+</html>
