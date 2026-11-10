@@ -64,10 +64,6 @@
 
   function readOption(card) {
     const data = window.BP.data();
-    const featureType = name => {
-      const f = data && data.features.find(x => x.name === name);
-      return f ? f.type : '';
-    };
 
     // Material: "Front: Majilite (#50)" (bookcloth) or "Back: Wood"
     const material = [...card.querySelectorAll('.material-row')].map(row => {
@@ -101,9 +97,13 @@
     }).filter(Boolean);
 
     // Selected toggles grouped by feature type, in the sheet's order
-    const pressed = [...card.querySelectorAll('.toggle-btn[aria-pressed="true"]')].map(b => b.dataset.feature);
+    // (type comes from the toggle's group, so custom toggles land in the right column)
+    const pressed = [...card.querySelectorAll('.toggle-btn[aria-pressed="true"]')].map(b => ({
+      name: b.dataset.feature,
+      type: b.closest('.feature-toggles__group').dataset.type,
+    }));
     const types = data ? [...new Set(data.features.map(f => f.type))] : [];
-    const byType = types.map(type => ({ type, items: pressed.filter(n => featureType(n) === type) }));
+    const byType = types.map(type => ({ type, items: pressed.filter(p => p.type === type).map(p => p.name) }));
 
     return { material, inserts, byType };
   }
@@ -178,9 +178,22 @@
     fitImages();
   }
 
+  // Pick a tidy % at or below the largest that fits (never above 100%):
+  //   • 25 / 50 / 75 if it's within 10 points of the fit (fits 58% → 50%)
+  //   • otherwise rounded down to a multiple of 10 (fits 68% → 60%)
+  //   • below 10%, a whole number (fits 7.4% → 7%)
+  // Always rounds down, so the images still fit.
+  function snapScale(fitPct) {
+    if (fitPct >= 100) return 100;
+    const quarter = Math.floor(fitPct / 25) * 25;
+    if (quarter >= 25 && fitPct - quarter <= 10) return quarter;
+    const tens = Math.floor(fitPct / 10) * 10;
+    return tens >= 10 ? tens : Math.max(1, Math.floor(fitPct));
+  }
+
   // Scale every image on the page by the same amount so they keep their real
-  // proportions, as large as fits (never above 100%). The % is rounded down
-  // to a whole number and that exact % is used, so "Shown at" is accurate.
+  // proportions, at the % snapScale picks. That exact % is used, so
+  // "Shown at" is accurate.
   function fitImages() {
     const figs = [...art.querySelectorAll('.proof-image')];
     if (!figs.length) return;
@@ -199,7 +212,7 @@
     const totalW = figs.reduce((sum, f) => sum + byId(f.dataset.id).widthIn * PX_PER_IN, 0);
     const maxH = Math.max(...figs.map(f => byId(f.dataset.id).heightIn * PX_PER_IN));
     const fit = Math.min(1, availW / totalW, availH / maxH);
-    const pct = Math.max(1, Math.floor(fit * 100));
+    const pct = snapScale(fit * 100);
 
     figs.forEach(f => {
       const image = byId(f.dataset.id);

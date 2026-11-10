@@ -162,6 +162,15 @@ body {
 
 .field[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px rgb(239 68 68 / 0.15); }
 
+/* Allowed but worth a look (e.g. a bookcloth that isn't on the list).
+   .field.field--warning so it wins over the red [aria-invalid] style above. */
+.field.field--warning {
+  border-color: var(--amber-500);
+  background: var(--amber-50);
+}
+
+.field.field--warning:focus { box-shadow: 0 0 0 3px rgb(245 158 11 / 0.2); }
+
 .field-error {
   margin: 0;
   font-size: var(--text-xs);
@@ -202,18 +211,13 @@ body {
   white-space: nowrap;
 }
 
-.job-bar__fields {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  gap: var(--space-2);
-}
+/* Footer style toggle and Designer sit on the right */
+.job-bar__theme { margin-left: auto; }
 
-.job-bar__field { flex: 1 1 0; min-width: 0; }
-.job-bar__field--sm { flex: 0 1 130px; }
-.job-bar__field--wide { flex-grow: 1.6; }
+.job-bar__designer { width: 180px; }
 
-.job-bar .data-status { flex-basis: 100%; }
+.job-bar__designer .field { width: 100%; }
+
 
 
 /* Small square icon button (Settings, dialog close) */
@@ -364,26 +368,55 @@ body {
 .saved-list__empty[hidden] { display: none; }
 
 
-/* ── DataSourceStatus (prototype only) ── */
+/* ── DataSourceStatus (prototype only): toast at the bottom of the window ── */
 
 .data-status {
+  position: fixed;
+  z-index: 30;   /* above combobox lists (20) */
+  bottom: var(--space-5);
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  max-width: calc(100vw - 32px);
   margin: 0;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
   font-size: var(--text-xs);
-  color: var(--text-muted);
+  color: var(--text);
+  transition: opacity 400ms ease-out;
 }
 
-.data-status { transition: opacity 400ms ease-out; }
 .data-status.is-dismissed { opacity: 0; }
 .data-status[hidden] { display: none; }
+
+.data-status__close {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.data-status__close:hover { background: var(--gray-100); color: var(--gray-700); }
+.data-status__close:focus-visible { outline: none; box-shadow: var(--ring); }
 
 .data-status__icon { color: var(--text-faint); }
 .data-status[data-state="live"] .data-status__icon { color: var(--emerald-500); }
 .data-status[data-state="fallback"] .data-status__icon { color: var(--amber-500); }
 .data-status[data-state="error"],
 .data-status[data-state="error"] .data-status__icon { color: var(--red-600); }
+
+@media (prefers-reduced-motion: reduce) {
+  .data-status { transition: none; }
+}
 
 
 /* ── OptionList / OptionCard ── */
@@ -698,7 +731,7 @@ body {
   gap: var(--space-1);
 }
 .material-row__detail[hidden] { display: none; }
-.material-row__detail .field-error { padding-left: var(--space-1); }
+.material-row__detail .field-warning { padding-left: var(--space-1); }
 
 /* Top-align so an error under the detail field doesn't shift the others */
 .material-row__main { align-items: flex-start; }
@@ -926,6 +959,45 @@ body {
 .custom-feature .add-btn { height: var(--field-height); }
 
 
+/* ── JobDetails (above the canvas) ── */
+
+.job-details {
+  display: flex;
+  flex-wrap: wrap;   /* fields wrap to two lines when the Edit drawer narrows the canvas */
+  align-items: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.job-details__field {
+  flex: 1 1 0;
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.job-details__field--sm { flex: 0 1 140px; min-width: 110px; }
+.job-details__field--wide { flex-grow: 1.6; }
+.job-details__field > .field { width: 100%; }
+
+/* Save PDF: last in the row, same height as the fields
+   (.job-details prefix so it beats the 32px in .button-save, defined later) */
+.job-details .job-details__save {
+  flex: none;
+  height: var(--field-height);
+  margin-left: auto;
+}
+
+.job-details__label {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+
 /* ── PagesPanel ── */
 
 .pages-panel {
@@ -1095,11 +1167,11 @@ body {
 
 .canvas__page-name { font-weight: 600; }
 
-/* Everything after the Edit button sits on the right */
-.canvas__toolbar [data-action="edit-option"] { margin-right: auto; }
+/* Edit option and Add images sit on the right */
+.canvas__toolbar [data-action="edit-option"] { margin-left: auto; }
 
 .canvas__file-btn,
-.canvas__save {
+.button-save {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -1115,18 +1187,18 @@ body {
   transition: background var(--transition), color var(--transition);
 }
 
-.canvas__file-btn:hover,
-.canvas__save:hover { background: var(--accent-50); color: var(--accent-700); }
+.canvas__file-btn:hover { background: var(--accent-50); color: var(--accent-700); }
 .canvas__file-btn:focus-within,
-.canvas__save:focus-visible { outline: none; box-shadow: var(--ring); }
+.button-save:focus-visible { outline: none; box-shadow: var(--ring); }
 
-.canvas__save {
+/* Primary button: Save PDF */
+.button-save {
   border-color: var(--accent-600);
   background: var(--accent-600);
   color: #ffffff;
 }
 
-.canvas__save:hover { background: var(--accent-700); color: #ffffff; }
+.button-save:hover { background: var(--accent-700); color: #ffffff; }
 
 /* Stage centers the scaled page; it's also the drop target */
 .canvas__stage {

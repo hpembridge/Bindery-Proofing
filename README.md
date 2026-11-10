@@ -17,16 +17,18 @@ This isn't a Platinum tool, so it doesn't use the PL-shared design tokens or sid
 
 ## Using it
 
-- **Job bar (top):** Job Number, Management Group, Property Name, Job Name and Designer. They apply to every page.
+- **Job details (above the canvas):** Job Number, Management Group, Property Name and Job Name. They apply to every page and print in the running header.
+- **Top bar:** Light footer / Dark footer, Designer (remembered in this browser) and Settings.
 - **Pages (left):** one page per option. Click a page to show it. Use **+** to add a page, the hover buttons to duplicate or delete it, and the grip to drag pages into a new order. Options are renumbered to match.
 - **Canvas (middle):** the selected page at 17 × 11, scaled to fit the window.
   - Drop PSD files onto it, or use **Add images**. PNG and JPG work too.
-  - All images on a page are scaled by the same amount, as large as fits above the footer and never above 100%. Each one is labeled "Shown at X%".
+  - All images on a page are scaled by the same amount, so they keep their real proportions. Each one is labeled "Shown at X%".
+  - The % is a tidy number at or below the largest that fits above the footer (never above 100%): 25, 50 or 75% when that's within 10 points of the fit, otherwise rounded down to a multiple of 10. For example, if 58% fits it uses 50%; if 68% fits it uses 60%.
   - Click an image's label (Cover, Interior…) to rename it. It defaults to the file name.
   - Hover an image to drag it into a new order or remove it.
 - **Running header:** the job info prints in one line across the top of every page, plus "Option N" on the right when there's more than one option.
-- **Footer:** fills in live. Hover it and click **Edit** to open that option's form in the drawer on the right. **Light footer / Dark footer** switches between the two styles in the examples.
-- **Save PDF:** saves every option as one multi-page PDF, one 17 × 11 page per option in Pages-panel order, with no margins. It uses the print dialog like the MCS does: choose **Save as PDF**. The file name is filled in as `<job number> Proof`.
+- **Footer:** fills in live. Hover it and click **Edit** to open that option's form in the drawer on the right. **Light footer / Dark footer** in the top bar switches between the two styles in the examples.
+- **Save PDF** (at the end of the job details): saves every option as one multi-page PDF, one 17 × 11 page per option in Pages-panel order, with no margins. It uses the print dialog like the MCS does: choose **Save as PDF**. The file name is filled in as `<job number> Proof`.
 
 ### Image files
 
@@ -36,7 +38,7 @@ This isn't a Platinum tool, so it doesn't use the PL-shared design tokens or sid
 | 16/32-bit PSD | Added, with a note that it's shown at 8-bit. |
 | PSD saved without **Maximize Compatibility** | Not added. The file has no flattened preview, and a message says to re-save it with that option on or to export a PNG. |
 | CMYK, Lab, Duotone or Multichannel PSD | Not added. The color mode is read from the PSD's header, and a message says to save an RGB copy or export a PNG. Browsers can't show these colors accurately. |
-| PNG / JPG | Added. Browsers can't read their resolution, so 72 ppi is assumed. Put the resolution in the file name to set it, e.g. `cover@300.png`. |
+| PNG / JPG | Added. Browsers can't read their resolution, so 300 ppi is assumed. If it's different, put the resolution in the file name, e.g. `cover@150.png`. |
 
 Images are kept only until the page is reloaded.
 
@@ -53,7 +55,7 @@ All suggestion lists come from the spreadsheet, so the team can edit them withou
 1. Share the sheet: **Anyone with the link → Viewer**.
 2. Paste its ID into `sheet-config.js` → `SHEET_ID`.
 
-The status line under the job bar shows where the lists came from. If the sheet is unreachable, the page falls back to the CSV snapshots in `data/`.
+A toast at the bottom of the window shows where the lists came from. It fades out when the sheet loads; warnings stay until you close them. If the sheet is unreachable, the page falls back to the CSV snapshots in `data/`.
 
 | Tab | Columns | Notes |
 |---|---|---|
@@ -85,7 +87,7 @@ The status line under the job bar shows where the lists came from. If the sheet 
 ## Other behavior
 
 - **Insert sizes:** type a count, Tab, then a size and Enter. It becomes a chip like (2) 8.5 x 11, and you go back to Count. The size is checked and formatted (`W x H` or `W x H folded (FW x FH flat)`), with a warning if the folded width isn't half the flat width. Click a chip's count or size to edit it.
-- **Custom features:** each feature type has a field (Custom decoration, Custom feature…). What you save becomes a toggle in every option. It's kept until the page is reloaded and isn't written to the sheet.
+- **Custom features:** each feature type has a field (Custom decoration, Custom feature…). What you save becomes a toggle in that option only, switched on. Switch it off to remove it. It isn't written to the sheet, but it's saved in the PDF with the option and copied when you duplicate the option.
 - **Footer lists** with more than one item get a "- " in front of each item, like the examples. Empty columns are left out. The Option line only shows when there's more than one option.
 - **Saved suggestions:** Management Group and Property Name remember what you type in this browser. Use the gear button to turn this off or remove entries.
 - **Drag & drop:** grips on pages, images, binding/material rows and size chips. Items stay within their own list. Grips also work with the arrow keys.

@@ -82,13 +82,16 @@
   }
 
 
-  // Fade the status line out after a moment, then remove it from the layout.
-  function dismissStatus() {
+  // Fade the status toast out (after `delay` ms), then hide it.
+  function dismissStatus(delay) {
     setTimeout(() => {
       statusEl.classList.add('is-dismissed');
-      statusEl.addEventListener('transitionend', () => { statusEl.hidden = true; }, { once: true });
-    }, 1200);
+      const hide = () => { statusEl.hidden = true; };
+      statusEl.addEventListener('transitionend', hide, { once: true });
+      setTimeout(hide, 450);   // in case there's no transition (reduced motion)
+    }, delay || 0);
   }
+  statusEl.querySelector('[data-action="dismiss-status"]').addEventListener('click', () => dismissStatus());
 
 
   // ── 2. Rows & options ─────────────────────────────────────────
@@ -188,15 +191,25 @@
   }
 
 
-  // Custom features: one field per feature type, added to this slip only (not
-  // the sheet). The new toggle shows up in that type's group in every option,
-  // switched on in the option it was added from.
+  // Custom features: one field per feature type. Saving adds a toggle to that
+  // option only (not the sheet, not the other options), switched on. Switching
+  // a custom toggle off removes it.
 
-  function makeToggle(name) {
+  function makeToggle(name, custom) {
     const btn = document.getElementById('tpl-feature-toggle').content.firstElementChild.cloneNode(true);
     btn.dataset.feature = name;
     btn.querySelector('.toggle-btn__label').textContent = name;
+    if (custom) {
+      btn.dataset.custom = '';
+      btn.setAttribute('aria-pressed', 'true');
+      btn.title = 'Click to remove';
+    }
     return btn;
+  }
+
+  function addCustomToggle(card, type, name) {
+    const g = [...card.querySelectorAll('.feature-toggles__group')].find(x => x.dataset.type === type);
+    if (g) g.querySelector('.feature-toggles__buttons').appendChild(makeToggle(name, true));
   }
 
   function saveCustomFeature(group) {
@@ -206,18 +219,11 @@
     const typed = input.value.trim();
     if (!typed || !DATA) return;
 
-    let feature = DATA.features.find(f => f.name.toLowerCase() === typed.toLowerCase());
-    if (!feature) {
-      feature = { name: typed, type, custom: true };
-      DATA.features.push(feature);   // new options pick it up from here
-      optionList.querySelectorAll('[data-option]').forEach(c => {
-        const g = [...c.querySelectorAll('.feature-toggles__group')].find(x => x.dataset.type === type);
-        if (g) g.querySelector('.feature-toggles__buttons').appendChild(makeToggle(feature.name));
-      });
-    }
-
-    const btn = [...card.querySelectorAll('.toggle-btn')].find(b => b.dataset.feature === feature.name);
-    if (btn) btn.setAttribute('aria-pressed', 'true');
+    // Already a toggle in this option (from the sheet, or saved before)? Just switch it on.
+    const existing = [...card.querySelectorAll('.toggle-btn')]
+      .find(b => b.dataset.feature.toLowerCase() === typed.toLowerCase());
+    if (existing) existing.setAttribute('aria-pressed', 'true');
+    else addCustomToggle(card, type, typed);
     input.value = '';
     input.focus();
   }
@@ -318,19 +324,27 @@
     const tab = material && material.detailList;
     if ((detail.dataset.list || '') !== (tab || '')) {   // list changed → clear old pick
       window.Combobox.setValue(detailEl, '');
-      setDetailError(detail, false);
+      setDetailWarning(detail, false);
     }
     detail.hidden = !tab;
     detail.dataset.list = tab || '';
-    if (tab) {
-      detail.querySelector('[data-detail-label]').textContent = titleCase(tab);
-      row.querySelector('[data-detail-error]').textContent =
-        'Pick a ' + titleCase(tab).toLowerCase() + ' from the list.';
-    }
+    if (tab) detail.querySelector('[data-detail-label]').textContent = titleCase(tab);
   }
 
-  function setDetailError(detail, isError) {
-    detail.closest('[data-row]').querySelector('[data-detail-error]').hidden = !isError;
+  // Typed a detail that isn't on the list (e.g. a bookcloth not in the sheet).
+  // It's allowed and prints as typed; the warning just says so.
+  function setDetailWarning(detail, show) {
+    const warning = detail.querySelector('[data-detail-warning]');
+    const input = detail.querySelector('.material-row__detail-input');
+    input.setAttribute('aria-invalid', 'false');    // combobox marks it invalid; here it's only a warning
+    input.classList.toggle('field--warning', show);
+    if (show) {
+      const typed = input.value.trim();
+      const list = titleCase(detail.dataset.list || '').toLowerCase();
+      warning.querySelector('[data-detail-warning-text]').textContent =
+        '“' + typed + '” isn’t on the ' + list + ' list. It will print as typed.';
+    }
+    warning.hidden = !show;
   }
 
   function titleCase(s) {
@@ -343,6 +357,13 @@
   form.addEventListener('click', e => {
     const toggle = e.target.closest('.toggle-btn');
     if (toggle) {
+      if (toggle.hasAttribute('data-custom')) {
+        // Custom toggles are always on; switching one off removes it
+        const input = toggle.closest('.feature-toggles__group').querySelector('.custom-feature__input');
+        toggle.remove();
+        input.focus();
+        return;
+      }
       toggle.setAttribute('aria-pressed', String(toggle.getAttribute('aria-pressed') !== 'true'));
       return;
     }
@@ -429,7 +450,7 @@
     if (el.matches('.binding-row__type')) updateBindingWording(el.closest('.binding-row'));
     if (el.matches('.material-row__material')) onMaterialCommit(el.closest('[data-row]'));
     if (el.dataset.source === 'detail') {
-      setDetailError(el.closest('.material-row__detail'), e.detail.value === null);
+      setDetailWarning(el.closest('.material-row__detail'), e.detail.value === null);
     }
   });
 
@@ -452,7 +473,7 @@
     }
 
     const detail = e.target.closest('.material-row__detail');
-    if (detail) setDetailError(detail, false);
+    if (detail) setDetailWarning(detail, false);
   });
 
 
@@ -460,7 +481,7 @@
 
   async function init() {
     renumberOptions();
-    form.querySelectorAll('.job-bar [data-combobox]').forEach(window.Combobox.setup);
+    form.querySelectorAll('.job-details [data-combobox]').forEach(window.Combobox.setup);
     try {
       const { source, data } = await window.loadSheetData();
       DATA = data;
@@ -471,7 +492,7 @@
         snapshot: 'Lists loaded from the CSV snapshot in data/ (no Google Sheet configured).',
         fallback: 'Couldn’t reach the Google Sheet — showing the CSV snapshot in data/.',
       }[source]);
-      if (source === 'live') dismissStatus();   // success fades out; warnings stay
+      if (source === 'live') dismissStatus(1500);   // success fades out; warnings stay until dismissed
     } catch (err) {
       console.error(err);
       setStatus('error', 'Couldn’t load the lists. Serve this folder over http (python3 -m http.server).');
@@ -494,21 +515,21 @@
         detail: row.querySelector('.material-row__detail').hidden ? '' : inputVal(row, '.material-row__detail-input'),
         fn: inputVal(row, '.material-row__function input'),
       })),
-      features: [...card.querySelectorAll('.toggle-btn[aria-pressed="true"]')].map(b => b.dataset.feature),
+      features: [...card.querySelectorAll('.toggle-btn[aria-pressed="true"]:not([data-custom])')].map(b => b.dataset.feature),
+      custom: [...card.querySelectorAll('.toggle-btn[data-custom]')].map(b => ({
+        name: b.dataset.feature,
+        type: b.closest('.feature-toggles__group').dataset.type,
+      })),
     }));
   }
 
-  // Custom features (slip-only) travel with the saved options
-  function serializeCustom() {
-    return DATA ? DATA.features.filter(f => f.custom).map(f => ({ name: f.name, type: f.type })) : [];
-  }
+  // Custom features are saved per option now (serializeOptions → custom).
+  // Kept so older callers still work.
+  function serializeCustom() { return []; }
 
-  function restoreOptions(options, custom) {
-    (custom || []).forEach(c => {
-      if (!DATA.features.some(f => f.name.toLowerCase() === c.name.toLowerCase())) {
-        DATA.features.push({ name: c.name, type: c.type, custom: true });
-      }
-    });
+  // `legacyCustom`: PDFs saved before custom features were per-option had one
+  // shared list; those become custom toggles in the options that had them on.
+  function restoreOptions(options, legacyCustom) {
     optionList.querySelectorAll('[data-option]').forEach(c => c.remove());
 
     const fill = (el, value) => window.Combobox.setValue(el, value || '');
@@ -544,8 +565,11 @@
 
       (opt.features || []).forEach(name => {
         const btn = [...card.querySelectorAll('.toggle-btn')].find(t => t.dataset.feature === name);
-        if (btn) btn.setAttribute('aria-pressed', 'true');
+        if (btn) { btn.setAttribute('aria-pressed', 'true'); return; }
+        const old = (legacyCustom || []).find(c => c.name === name);
+        if (old) addCustomToggle(card, old.type, old.name);
       });
+      (opt.custom || []).forEach(c => addCustomToggle(card, c.type, c.name));
       return card;
     });
 

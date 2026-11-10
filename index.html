@@ -17,42 +17,26 @@
        the same delegated event handlers (bindery-proofing.js). -->
   <form class="app" id="proof-form" novalidate>
 
-    <!-- ════════════ JobBar — general job information ════════════ -->
+    <!-- ════════════ JobBar — app title, footer style, designer, settings ════════════ -->
     <header class="job-bar" aria-labelledby="job-bar-title">
       <h1 class="job-bar__title" id="job-bar-title">Proof Builder</h1>
 
-      <div class="job-bar__fields">
-        <label class="visually-hidden" for="job-number">Job Number</label>
-        <input class="field job-bar__field job-bar__field--sm" id="job-number" name="jobNumber" type="text" placeholder="Job Number" />
+      <!-- FooterTheme: light footer / dark footer (both appear in the creative examples) -->
+      <div class="segmented job-bar__theme" role="group" aria-label="Footer style">
+        <button type="button" class="segmented__btn" data-footer-theme="light" aria-pressed="true">Light footer</button>
+        <button type="button" class="segmented__btn" data-footer-theme="dark" aria-pressed="false">Dark footer</button>
+      </div>
 
-        <!-- Management Group / Property Name: free text, with suggestions saved in this browser (saved-suggestions.js) -->
-        <label class="visually-hidden" for="management-group">Management Group</label>
-        <div class="combobox job-bar__field" data-combobox data-freeform data-source="savedManagementGroup">
-          <input class="field combobox__input" id="management-group" name="managementGroup" type="text" placeholder="Management Group"
-            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
-          <ul class="combobox__listbox" role="listbox" hidden></ul>
-        </div>
-        <label class="visually-hidden" for="customer">Property Name</label>
-        <div class="combobox job-bar__field" data-combobox data-freeform data-source="savedCustomer">
-          <input class="field combobox__input" id="customer" name="customer" type="text" placeholder="Property Name"
-            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
-          <ul class="combobox__listbox" role="listbox" hidden></ul>
-        </div>
-        <label class="visually-hidden" for="job-description">Job Name</label>
-        <input class="field job-bar__field job-bar__field--wide" id="job-description" name="jobDescription" type="text" placeholder="Job Name" />
+      <!-- Designer stays up here: it's about who's making the proof, not the job -->
+      <div class="job-bar__designer">
         <label class="visually-hidden" for="designer">Designer</label>
-        <input class="field job-bar__field job-bar__field--sm" id="designer" name="designer" type="text" placeholder="Designer" />
+        <input class="field" id="designer" name="designer" type="text" placeholder="Designer" />
       </div>
 
       <button type="button" class="icon-btn" id="settings-open" aria-label="Settings" title="Settings" aria-haspopup="dialog">
         <i class="fa-solid fa-gear" aria-hidden="true"></i>
       </button>
 
-      <!-- DataSourceStatus — prototype only: shows where the suggestion lists came from -->
-      <p class="data-status" id="data-status" data-state="loading" role="status">
-        <i class="fa-solid fa-circle-notch fa-spin data-status__icon" aria-hidden="true"></i>
-        <span class="data-status__text">Loading lists from the spreadsheet…</span>
-      </p>
     </header>
     <!-- ════════════ /JobBar ════════════ -->
 
@@ -73,6 +57,39 @@
 
     <!-- ════════════ Canvas — the 17 x 11 proof for the selected option ════════════ -->
     <main class="canvas" id="canvas">
+
+      <!-- JobDetails — the job this proof is for (prints in the running header) -->
+      <section class="job-details" aria-label="Job details">
+        <div class="job-details__field job-details__field--sm">
+          <label class="job-details__label" for="job-number">Job Number</label>
+          <input class="field" id="job-number" name="jobNumber" type="text" placeholder="e.g. 395309" />
+        </div>
+        <!-- Management Group / Property Name: free text, with suggestions saved in this browser (saved-suggestions.js) -->
+        <div class="job-details__field">
+          <label class="job-details__label" for="management-group">Management Group</label>
+          <div class="combobox" data-combobox data-freeform data-source="savedManagementGroup">
+            <input class="field combobox__input" id="management-group" name="managementGroup" type="text" placeholder="If applicable"
+              role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+            <ul class="combobox__listbox" role="listbox" hidden></ul>
+          </div>
+        </div>
+        <div class="job-details__field">
+          <label class="job-details__label" for="customer">Property Name</label>
+          <div class="combobox" data-combobox data-freeform data-source="savedCustomer">
+            <input class="field combobox__input" id="customer" name="customer" type="text"
+              role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+            <ul class="combobox__listbox" role="listbox" hidden></ul>
+          </div>
+        </div>
+        <div class="job-details__field job-details__field--wide">
+          <label class="job-details__label" for="job-description">Job Name</label>
+          <input class="field" id="job-description" name="jobDescription" type="text" />
+        </div>
+        <button type="button" class="button-save job-details__save" data-action="save-pdf">
+          <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Save PDF
+        </button>
+      </section>
+
       <div class="canvas__toolbar">
         <span class="canvas__page-name" id="canvas-page-name">Option 1</span>
         <button type="button" class="canvas__file-btn" data-action="edit-option">
@@ -82,14 +99,6 @@
           <i class="fa-solid fa-image" aria-hidden="true"></i> Add images
           <input class="visually-hidden" id="image-input" type="file" accept=".psd,image/png,image/jpeg" multiple />
         </label>
-        <!-- FooterTheme: light footer / dark footer (both appear in the creative examples) -->
-        <div class="segmented" role="group" aria-label="Footer style">
-          <button type="button" class="segmented__btn" data-footer-theme="light" aria-pressed="true">Light footer</button>
-          <button type="button" class="segmented__btn" data-footer-theme="dark" aria-pressed="false">Dark footer</button>
-        </div>
-        <button type="button" class="canvas__save" data-action="save-pdf">
-          <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Save PDF
-        </button>
       </div>
 
       <!-- ImportNotices — problems with dropped files (screen only) -->
@@ -225,6 +234,17 @@
     </aside>
     <!-- ════════════ /EditDrawer ════════════ -->
 
+    <!-- ════════════ DataSourceStatus — prototype only: toast showing where the suggestion lists came from.
+         Fixed to the bottom of the window, so it doesn't push the layout around. ════════════ -->
+    <div class="data-status" id="data-status" data-state="loading" role="status">
+      <i class="fa-solid fa-circle-notch fa-spin data-status__icon" aria-hidden="true"></i>
+      <span class="data-status__text">Loading lists from the spreadsheet…</span>
+      <button type="button" class="data-status__close" data-action="dismiss-status" aria-label="Dismiss" title="Dismiss">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    <!-- ════════════ /DataSourceStatus ════════════ -->
+
   </form>
 
   <!-- PrintPages — filled with one copy of the proof page per option just
@@ -340,7 +360,11 @@
               role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
             <ul class="combobox__listbox" role="listbox" hidden></ul>
           </div>
-          <p class="field-error" data-detail-error hidden>Pick a bookcloth from the list.</p>
+          <!-- Typed something that isn't on the list: allowed (it prints as typed), with a warning -->
+          <p class="field-warning" data-detail-warning hidden>
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <span data-detail-warning-text></span>
+          </p>
         </div>
         <!-- Function suggestions = functions the chosen material is eligible for -->
         <div class="combobox material-row__function" data-combobox data-source="functions">
@@ -360,7 +384,7 @@
     <div class="feature-toggles__group" role="group" aria-label="Decorations" data-type="Decoration">
       <span class="feature-toggles__label">Decorations</span>
       <div class="feature-toggles__buttons"></div>
-      <!-- CustomFeature — adds a toggle of this type to every option on this slip -->
+      <!-- CustomFeature — adds a toggle of this type to this option only; switching it off removes it -->
       <div class="custom-feature">
         <input class="field custom-feature__input" type="text" placeholder="Custom decoration" aria-label="Custom decoration" />
         <button type="button" class="add-btn" data-action="save-custom-feature">Save</button>
@@ -544,10 +568,12 @@
   ────────────────────────────────────────────────────────────────
   Components (HTML here → CSS in bindery-proofing.css):
     App shell         → form.app                     → .app (grid: job bar / pages / canvas / drawer)
-    JobBar            → header.job-bar               → .job-bar, .field
+    JobBar            → header.job-bar (title, footer style, designer, settings) → .job-bar, .segmented
+    DataSourceStatus  → div.data-status (toast, bottom of the window) → .data-status
+    JobDetails        → section.job-details (above the canvas toolbar; job fields + Save PDF) → .job-details, .field, .button-save
     SettingsDialog    → dialog#settings-dialog + #tpl-saved-item → .settings-dialog, .saved-list
     PagesPanel        → nav.pages-panel + #tpl-page-item → .pages-panel, .page-item
-    Canvas            → main.canvas (toolbar, notices, stage) → .canvas, .notices, .segmented
+    Canvas            → main.canvas (toolbar: page name, Edit option, Add images; notices; stage) → .canvas, .notices
     ProofPage         → article.proof-page (17 x 11 in; this is the PDF) → .proof-page
     ProofHeader       → header.proof-header (running header: job info) → .proof-header
     ProofImage        → #tpl-proof-image             → .proof-image

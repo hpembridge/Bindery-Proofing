@@ -17,7 +17,7 @@
   'use strict';
 
   const COLOR_MODES = { 0: 'Bitmap', 1: 'Grayscale', 2: 'Indexed', 3: 'RGB', 4: 'CMYK', 7: 'Multichannel', 8: 'Duotone', 9: 'Lab' };
-  const DEFAULT_PPI = 72;   // when a PNG/JPG doesn't say
+  const DEFAULT_PPI = 300;  // when a PNG/JPG (or PSD) doesn't say
 
   const baseName = file => file.name.replace(/\.[^.]+$/, '');
 
@@ -88,8 +88,8 @@
     };
   }
 
-  // PNG / JPG: browsers don't expose the file's resolution, so 72 ppi is assumed
-  // unless the name says otherwise (e.g. "cover@300.png").
+  // PNG / JPG: browsers don't expose the file's resolution, so 300 ppi is assumed
+  // unless the name says otherwise (e.g. "cover@150.png").
   function importBitmap(file) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
@@ -104,7 +104,7 @@
           heightIn: img.naturalHeight / ppi,
           ppi,
           colorMode: 'RGB',
-          warnings: m ? [] : ['PNG/JPG size assumed at ' + DEFAULT_PPI + ' ppi. Add @300 to the file name (cover@300.png) to set its resolution.'],
+          warnings: m ? [] : ['PNG/JPG size assumed at ' + DEFAULT_PPI + ' ppi. If it’s different, add the resolution to the file name (cover@150.png).'],
         });
       };
       img.onerror = () => reject(new Error(file.name + ' couldn’t be opened as an image.'));
