@@ -1,6 +1,6 @@
 # Bindery Proofing
 
-HTML/CSS/JS prototype of the bindery proofing form (Figma: `HREYjXfLCsU3h29NsntaHI`, node `54:3240`). A job has one or more **Options**; each option lists binding types, materials (with function) and features.
+HTML/CSS/JS tool for building 17 × 11 bindery proofs. Each **option** is one page: the artwork on top (dropped in as PSDs) and a full-width footer that describes the option (materials, inserts, decorations, features). Each page saves as its own PDF. The layout follows the creative team's examples ("Updated Digital Rendering").
 
 ## Run it
 
@@ -15,80 +15,85 @@ It has to be served over http, because the dropdown lists are fetched (a `file:/
 
 This isn't a Platinum tool, so it doesn't use the PL-shared design tokens or sidebar. Its styles live in `bindery-proofing.css` alone. The values come from Tailwind's scales and are defined as custom properties at the top of that file. Icons use the Font Awesome kit, and the font is Inter from Google Fonts.
 
+## Using it
+
+- **Job bar (top):** Job Number, Management Group, Property Name, Job Name and Designer. They apply to every page.
+- **Pages (left):** one page per option. Click a page to show it. Use **+** to add a page, the hover buttons to duplicate or delete it, and the grip to drag pages into a new order. Options are renumbered to match.
+- **Canvas (middle):** the selected page at 17 × 11, scaled to fit the window.
+  - Drop PSD files onto it, or use **Add images**. PNG and JPG work too.
+  - All images on a page are scaled by the same amount, as large as fits above the footer and never above 100%. Each one is labeled "Shown at X%".
+  - Click an image's label (Cover, Interior…) to rename it. It defaults to the file name.
+  - Hover an image to drag it into a new order or remove it.
+- **Running header:** the job info prints in one line across the top of every page, plus "Option N" on the right when there's more than one option.
+- **Footer:** fills in live. Hover it and click **Edit** to open that option's form in the drawer on the right. **Light footer / Dark footer** switches between the two styles in the examples.
+- **Save PDF:** saves every option as one multi-page PDF, one 17 × 11 page per option in Pages-panel order, with no margins. It uses the print dialog like the MCS does: choose **Save as PDF**. The file name is filled in as `<job number> Proof`.
+
+### Image files
+
+| File | What happens |
+|---|---|
+| RGB PSD (8-bit) | Added. Only the flattened preview stored in the PSD is read, so it's quick even for big files. Its size comes from the PSD's resolution. |
+| 16/32-bit PSD | Added, with a note that it's shown at 8-bit. |
+| PSD saved without **Maximize Compatibility** | Not added. The file has no flattened preview, and a message says to re-save it with that option on or to export a PNG. |
+| CMYK, Lab, Duotone or Multichannel PSD | Not added. The color mode is read from the PSD's header, and a message says to save an RGB copy or export a PNG. Browsers can't show these colors accurately. |
+| PNG / JPG | Added. Browsers can't read their resolution, so 72 ppi is assumed. Put the resolution in the file name to set it, e.g. `cover@300.png`. |
+
+Images are kept only until the page is reloaded.
+
+PSDs are read with **ag-psd** (MIT license, `vendor/ag-psd-31.0.3.js`). It's kept in the repo so the tool works offline and doesn't change unexpectedly.
+
+### Logo
+
+`assets/logo-on-dark.png` and `assets/logo-on-light.png` were cropped from the example PDF as stand-ins. Swap in the real logo files (SVG preferred) with the same names, or update the two `<img>` tags in the footer.
+
 ## Data source: the Google Sheet
 
-All dropdown lists come from the spreadsheet, so the team can edit them without touching code.
+All suggestion lists come from the spreadsheet, so the team can edit them without touching code.
 
-1. Import `data/bindery-proofing-data.xlsx` into the Google Sheet (File → Import → Replace spreadsheet), or rename your tabs and columns to match the list below.
-2. Share it: **Anyone with the link → Viewer**.
-3. Paste the sheet ID into `sheet-config.js` → `SHEET_ID`.
+1. Share the sheet: **Anyone with the link → Viewer**.
+2. Paste its ID into `sheet-config.js` → `SHEET_ID`.
 
-The status line under Job Information shows where the lists came from. If the sheet is unreachable, the page falls back to the CSV snapshots in `data/`. To refresh the snapshots, download each tab as CSV into `data/<tab>.csv`.
+The status line under the job bar shows where the lists came from. If the sheet is unreachable, the page falls back to the CSV snapshots in `data/`.
 
 | Tab | Columns | Notes |
 |---|---|---|
-| `materials` | `Material`, one column per function, `Detail List` | Put `x` where a material can be used for a function. Function columns can be added, removed or reordered; the Function dropdown follows the column order. `Detail List` names a tab with a second-level pick list (Bookcloth → `bookcloth`). |
-| `binding_types` | `Binding Type`, `standard`, `folded`, `variable` | Put `x` to choose which Insert Size suggestions a binding type gets (`standard` = flat sizes, `folded` = folded sizes) and whether "Variable" is suggested for Insert Count. With no binding type picked, everything is suggested. You can still type any size or count. |
-| `features` | `Feature`, `Type` | `Type` is `Decoration` (maps to an MCS decoration) or `Feature`. The toggle buttons are grouped by type. |
-| `bookcloth` | `Name`, `Customer Facing Name`, … | `Name` (first column) is what you search by; `Customer Facing Name` is what prints on the footer. |
-| `Sizes` | `w`, `h`, `flat w`, `folded` (+ the `inch marks?` checkbox) | Suggestions for Insert Size. The display text is rebuilt from the number columns, so it always matches how typed sizes are formatted. The `inch marks?` checkbox turns inch marks on or off everywhere. |
+| `materials` | `Material`, one column per function, `Detail List` | Put `x` where a material can be used for a function. The Function suggestions follow the column order. `Detail List` names a tab with a second-level pick list (Bookcloth → `bookcloth`). |
+| `binding_types` | `Binding Type`, `standard`, `folded`, `variable` | `x` chooses which Insert Size suggestions a binding type gets (`standard` = flat sizes, `folded` = folded sizes) and whether "Variable" is suggested for Insert Count. |
+| `features` | `Feature`, `Type` | The toggles are grouped by `Type`, and each type gets its own footer column labeled with the type (Decoration, Feature…). |
+| `bookcloth` | `Name`, `Customer Facing Name`, … | `Name` is what you search by; `Customer Facing Name` is what prints, exactly as written. |
+| `Sizes` | `w`, `h`, `flat w`, `folded` (+ the `inch marks?` checkbox) | Insert Size suggestions. The `inch marks?` checkbox turns inch marks on or off everywhere. |
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `index.html` | All markup, plus the `<template>`s for rows, options and combobox suggestions |
-| `proof-footer.js` | Live footer previews, width, Save PDF |
+| `index.html` | All markup, plus the `<template>`s for pages, images, footer items, rows, chips and option cards |
+| `bindery-proofing.css` | All styles, in component order |
+| `proof-page.js` | Pages panel, canvas, image fitting, footer, Edit drawer, Save PDF |
+| `psd-import.js` | Reads PSD/PNG/JPG files and checks them |
+| `bindery-proofing.js` | The option form (rows, comboboxes, chips, toggles, custom features) |
+| `combobox.js` | Type-ahead fields |
 | `size-format.js` | Parses, validates and formats sizes (W x H, folded/flat) |
-| `saved-suggestions.js` | Remembers Management Group / Customer in this browser + the Settings dialog |
-| `sortable.js` | Drag & drop reordering (rows, size chips, footers) |
-| `combobox.js` | Type-ahead behavior (filtering, keyboard, must-match-a-suggestion check) |
-| `bindery-proofing.css` | Page styles, in component order |
-| `bindery-proofing.js` | Prototype behavior only |
-| `sheet-config.js` | Google Sheet ID + tab names |
-| `sheet-data.js` | Fetches and parses the sheet (stands in for a real API) |
-| `data/` | CSV snapshots + the restructured `.xlsx` |
+| `sortable.js` | Drag & drop reordering (pages, images, rows, chips) |
+| `saved-suggestions.js` | Remembers Management Group / Property Name in this browser + Settings |
+| `sheet-config.js`, `sheet-data.js` | Google Sheet ID and loader (stands in for a real API) |
+| `vendor/` | ag-psd and its license |
+| `assets/` | Footer logos |
+| `data/` | CSV snapshots of the sheet |
+| `proof-footer.js` | **No longer used** (the old footer-only version). Safe to delete. |
 
-## Implementation notes
+## Other behavior
 
-| Component | HTML | CSS |
-|---|---|---|
-| `Combobox` | `div.combobox[data-combobox]` (in each row template) + `#tpl-combobox-*` | `.combobox` |
-| `SizeChipInput` | `.binding-row__sizes` + `#tpl-size-chip` | `.chip-input`, `.chip` |
-| `FooterDock` / `ProofFooter` | `aside.footer-dock` + `#tpl-footer-preview` | `.footer-dock`, `.footer-preview`, `.proof-footer` |
-| `JobInfo` | `section.job-info` | `.job-info`, `.field` |
-| `OptionList` | `#option-list` | `.option-list` |
-| `OptionCard` | `section.option-card` / `#tpl-option-card` | `.option-card` |
-| `OptionSection` (Binding Types / Materials / Features) | `fieldset.option-section` | `.option-section`, `.add-btn` |
-| `BindingRow` | `.binding-row` / `#tpl-binding` | `.spec-row`, `.binding-row` |
-| `MaterialRow` | `.material-row` / `#tpl-material` | `.material-row`, `.material-row__detail` |
-| `FeatureToggles` | `[data-feature-toggles]` + `#tpl-feature-group` / `#tpl-feature-toggle` | `.feature-toggles`, `.toggle-btn` |
+- **Insert sizes:** type a count, Tab, then a size and Enter. It becomes a chip like (2) 8.5 x 11, and you go back to Count. The size is checked and formatted (`W x H` or `W x H folded (FW x FH flat)`), with a warning if the folded width isn't half the flat width. Click a chip's count or size to edit it.
+- **Custom features:** each feature type has a field (Custom decoration, Custom feature…). What you save becomes a toggle in every option. It's kept until the page is reloaded and isn't written to the sheet.
+- **Footer lists** with more than one item get a "- " in front of each item, like the examples. Empty columns are left out. The Option line only shows when there's more than one option.
+- **Saved suggestions:** Management Group and Property Name remember what you type in this browser. Use the gear button to turn this off or remove entries.
+- **Drag & drop:** grips on pages, images, binding/material rows and size chips. Items stay within their own list. Grips also work with the arrow keys.
 
-**Simulated in JS. In Angular these become state and event handling:**
+## Reloading a saved proof
 
-- Adding and removing rows and options → a `FormArray` per section with `@for`; the `<template>`s are the loop bodies. Every section starts with no rows.
-- Type-ahead fields (`combobox.js`) → one Combobox component: an `options` input, filtering as you type, arrow keys/Enter/Escape, and a check that the value matches a suggestion.
-- Insert sizes → Enter adds the size as a chip, whether or not it's on the list. `size-format.js` checks it's a W x H size, formats it as `W x H` or `W x H folded (FW x FH flat)`, adds or strips inch marks, and warns when the folded width isn't half the flat width (or the heights differ). Becomes a pipe + validator; chips are a sizes array per binding row.
-- Feature toggle buttons (`aria-pressed`) → a selected-features array per option.
-- "Option N" numbering → `$index + 1`. Delete is disabled when only one option is left.
-- Function suggestions are filtered by the selected Material → a computed list from that material's eligibility. If the material changes, a function that's no longer eligible gets cleared.
-- The Bookcloth detail field appears when the material has a `Detail List` → `@if`. The value has to match an item in the list → validator.
-- `sheet-data.js` and the status line are prototype-only and get replaced by a real service.
+Like the MCS, **Save PDF** writes the proof's data into the PDF as tiny white text on the first page, between `%%BP%%` marks. That covers the job fields, footer style, every option's form and any custom features. **Drop that PDF anywhere on the tool** to reload it. The PDF is read with pdf.js, the same version the MCS loads from cdnjs. If you already have work open, it asks before replacing it.
 
-## Proof footers
+Images aren't stored in the PDF, because they'd make it huge. Their labels are, so after a reload a message lists which images each option had (e.g. "Option 1: Cover, Interior") so you can drop the PSDs back in.
 
-Each option gets its own footer, shown live at the bottom of the page. Set the width in inches and the boxes wrap with flexbox to fit. The first box reads `Mgmt Group / Customer` and `Job # - Job Description - Option N`. Then come Material and Inserts, plus one box per feature type from the sheet, labeled with the type (Decorations, Features…). Any list with more than one item prints as bullets, and empty boxes are left out.
-
-**Custom features:** each feature type has its own field (Custom decoration, Custom feature…). Type and press **Save** (or Enter). It becomes a toggle of that type in every option on this slip, switched on in the option you added it from. It's kept only until the page is reloaded and isn't written to the sheet.
-
-**Save PDF** works like the MCS: it opens the print dialog with only that footer on a page sized exactly to it (width × its current height, no margins), and the file name is filled in as `<job number> Proof Footer Option N`. Choose **Save as PDF** as the destination. The browser asks where to save each time.
-
-## Reordering and duplicating
-
-- **Drag & drop:** use the grip on the left of a binding type or material row, or inside a size chip, to drag it into a new place. Items stay within their own list. You can also focus a grip and use the arrow keys.
-- **Option order:** drag a footer by its grip in the Proof Footers area. The options are renumbered to match, and the cards in the form move too.
-- **Duplicate:** the copy button next to Delete adds a copy of that option, with everything filled in, right after it.
-
-## Saved suggestions
-
-Management Group and Customer remember what you type, saved in this browser's localStorage when you leave the field, and suggest it next time. Each person's browser keeps its own list. The gear button opens **Settings**, where you can turn this on or off and remove single entries or clear a whole list.
+**Designer** is remembered in this browser and filled in automatically, like the MCS. It uses the same storage key (`mcs_designer`), so the two tools share it when they're opened from the same address.

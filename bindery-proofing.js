@@ -93,11 +93,12 @@
 
   // ── 2. Rows & options ─────────────────────────────────────────
 
-  function addRow(section, type) {
+  function addRow(section, type, quiet) {
     const row = document.getElementById(TEMPLATE_IDS[type]).content.firstElementChild.cloneNode(true);
     section.querySelector('[data-rows="' + type + '"]').appendChild(row);
     wireRow(row);
-    row.querySelector('input').focus();
+    if (!quiet) row.querySelector('input').focus();
+    return row;
   }
 
   function addOption() {
@@ -105,7 +106,22 @@
     optionList.appendChild(card);
     renderFeatureToggles(card);
     renumberOptions();
-    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    announce('bp:option-added', { card });
+    return card;
+  }
+
+  // proof-page.js listens for these to update the Pages panel and selection
+  function announce(type, detail) {
+    document.dispatchEvent(new CustomEvent(type, { detail }));
+  }
+
+  function removeOption(card) {
+    const cards = [...optionList.querySelectorAll('[data-option]')];
+    if (cards.length === 1) return;   // always keep at least one option
+    const index = cards.indexOf(card);
+    card.remove();
+    renumberOptions();
+    announce('bp:option-removed', { card, index });
   }
 
   // Duplicate: copy the card as it stands (values, chips, toggles) right after it
@@ -122,7 +138,8 @@
 
     card.after(copy);
     renumberOptions();
-    copy.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    announce('bp:option-added', { card: copy, source: card });
+    return copy;
   }
 
   function renumberOptions() {
@@ -363,8 +380,7 @@
         duplicateOption(btn.closest('[data-option]'));
         break;
       case 'remove-option':
-        btn.closest('[data-option]').remove();
-        renumberOptions();
+        removeOption(btn.closest('[data-option]'));
         break;
     }
   });
@@ -444,7 +460,7 @@
 
   async function init() {
     renumberOptions();
-    form.querySelectorAll('.job-info [data-combobox]').forEach(window.Combobox.setup);
+    form.querySelectorAll('.job-bar [data-combobox]').forEach(window.Combobox.setup);
     try {
       const { source, data } = await window.loadSheetData();
       DATA = data;
@@ -462,8 +478,93 @@
     }
   }
 
+  // ── Save / reload the options (embedded in the PDF by proof-page.js) ──
+
+  const inputVal = (root, sel) => root.querySelector(sel).value.trim();
+
+  function serializeOptions() {
+    return [...optionList.querySelectorAll('[data-option]')].map(card => ({
+      bindings: [...card.querySelectorAll('.binding-row')].map(row => ({
+        type: inputVal(row, '.binding-row__type input'),
+        count: inputVal(row, '.binding-row__count input'),
+        chips: [...row.querySelectorAll('[data-chip]')].map(c => ({ count: c.dataset.count, size: c.dataset.size })),
+      })),
+      materials: [...card.querySelectorAll('.material-row')].map(row => ({
+        material: inputVal(row, '.material-row__material input'),
+        detail: row.querySelector('.material-row__detail').hidden ? '' : inputVal(row, '.material-row__detail-input'),
+        fn: inputVal(row, '.material-row__function input'),
+      })),
+      features: [...card.querySelectorAll('.toggle-btn[aria-pressed="true"]')].map(b => b.dataset.feature),
+    }));
+  }
+
+  // Custom features (slip-only) travel with the saved options
+  function serializeCustom() {
+    return DATA ? DATA.features.filter(f => f.custom).map(f => ({ name: f.name, type: f.type })) : [];
+  }
+
+  function restoreOptions(options, custom) {
+    (custom || []).forEach(c => {
+      if (!DATA.features.some(f => f.name.toLowerCase() === c.name.toLowerCase())) {
+        DATA.features.push({ name: c.name, type: c.type, custom: true });
+      }
+    });
+    optionList.querySelectorAll('[data-option]').forEach(c => c.remove());
+
+    const fill = (el, value) => window.Combobox.setValue(el, value || '');
+    const cards = (options.length ? options : [{}]).map(opt => {
+      const card = document.getElementById('tpl-option-card').content.firstElementChild.cloneNode(true);
+      optionList.appendChild(card);
+      renderFeatureToggles(card);
+      const sections = card.querySelectorAll('.option-section');
+
+      (opt.bindings || []).forEach(b => {
+        const row = addRow(sections[0], 'binding', true);
+        fill(row.querySelector('.binding-row__type'), b.type);
+        fill(row.querySelector('.binding-row__count'), b.count);
+        const box = row.querySelector('[data-chip-input]');
+        const combo = box.querySelector('.chip-input__combobox');
+        (b.chips || []).forEach(c => {
+          const result = window.SizeFormat.parse(c.size, { inchMarks: DATA.settings.inchMarks });
+          const chip = document.getElementById('tpl-size-chip').content.firstElementChild.cloneNode(true);
+          setChip(chip, c.count || '', result.ok ? result : { text: c.size, warning: null });
+          box.insertBefore(chip, combo);
+        });
+        updateSizeState(row.querySelector('.binding-row__sizes'));
+        updateBindingWording(row);
+      });
+
+      (opt.materials || []).forEach(m => {
+        const row = addRow(sections[1], 'material', true);
+        fill(row.querySelector('.material-row__material'), m.material);
+        onMaterialCommit(row);   // enables Function, shows the bookcloth search
+        if (m.detail) fill(row.querySelector('.material-row__detail [data-combobox]'), m.detail);
+        fill(row.querySelector('.material-row__function'), m.fn);
+      });
+
+      (opt.features || []).forEach(name => {
+        const btn = [...card.querySelectorAll('.toggle-btn')].find(t => t.dataset.feature === name);
+        if (btn) btn.setAttribute('aria-pressed', 'true');
+      });
+      return card;
+    });
+
+    renumberOptions();
+    announce('bp:restored', { cards });
+  }
+
   // Read-only access to the sheet data for proof-footer.js
-  window.BP = { data: () => DATA, renumber: renumberOptions };
+  window.BP = {
+    data: () => DATA,
+    renumber: renumberOptions,
+    addOption,
+    duplicateOption,
+    removeOption,
+    serializeOptions,
+    serializeCustom,
+    restoreOptions,
+    ready: () => !!DATA,
+  };
 
   init();
 })();
