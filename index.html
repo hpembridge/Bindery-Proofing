@@ -60,6 +60,25 @@
 
       <!-- JobDetails — the job this proof is for (prints in the running header) -->
       <section class="job-details" aria-label="Job details">
+        <!-- FolderLink — connects this proof's art folder (Chrome/Edge only; stays hidden in other browsers).
+             Not remembered: each proof links its own folder. data-state: none | linked -->
+        <div class="folder-link" id="folder-link" data-state="none" hidden>
+          <button type="button" class="button-secondary folder-link__add" data-action="folder-link">
+            <i class="fa-solid fa-folder-plus" aria-hidden="true"></i> Link folder
+          </button>
+          <span class="folder-link__name" title="Linked folder">
+            <i class="fa-solid fa-folder" aria-hidden="true"></i>
+            <span class="folder-link__name-text" data-folder-name>Art</span>
+          </span>
+          <button type="button" class="icon-btn folder-link__refresh" data-action="folder-refresh"
+            aria-label="Reload images from the folder" title="Reload images from the folder">
+            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="icon-btn folder-link__unlink" data-action="folder-unlink"
+            aria-label="Unlink folder" title="Unlink folder">
+            <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
+          </button>
+        </div>
         <div class="job-details__field job-details__field--sm">
           <label class="job-details__label" for="job-number">Job Number</label>
           <input class="field" id="job-number" name="jobNumber" type="text" placeholder="e.g. 395309" />
@@ -92,10 +111,11 @@
 
       <div class="canvas__toolbar">
         <span class="canvas__page-name" id="canvas-page-name">Option 1</span>
-        <button type="button" class="canvas__file-btn" data-action="edit-option">
+        <button type="button" class="button-secondary" data-action="edit-option">
           <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit option
         </button>
-        <label class="canvas__file-btn">
+        <!-- With a linked folder, Add images opens the file picker in that folder (proof-page.js) -->
+        <label class="button-secondary" data-add-images>
           <i class="fa-solid fa-image" aria-hidden="true"></i> Add images
           <input class="visually-hidden" id="image-input" type="file" accept=".psd,image/png,image/jpeg" multiple />
         </label>
@@ -443,6 +463,18 @@
       <button type="button" class="page-item__select" data-action="page-select" aria-current="false">
         <span class="page-item__thumb">
           <img class="page-item__thumb-img" alt="" hidden />
+          <!-- PageFlags — badges in the thumbnail's top-left corner, set after a reload with a
+               linked folder (proof-page.js sets title + text). * = art changed, ? = not in folder -->
+          <span class="page-item__flags">
+            <span class="page-item__flag page-item__flag--changed" data-flag="changed" hidden>
+              <i class="fa-solid fa-asterisk" aria-hidden="true"></i>
+              <span class="visually-hidden" data-flag-text></span>
+            </span>
+            <span class="page-item__flag page-item__flag--missing" data-flag="missing" hidden>
+              <i class="fa-solid fa-question" aria-hidden="true"></i>
+              <span class="visually-hidden" data-flag-text></span>
+            </span>
+          </span>
         </span>
         <span class="page-item__name">Option 1</span>
       </button>
@@ -496,6 +528,8 @@
     <li class="notice" data-kind="error">
       <i class="fa-solid fa-circle-exclamation notice__icon" aria-hidden="true"></i>
       <span class="notice__text">Message</span>
+      <!-- Optional action (e.g. "Review Option 1 specifications"); clicking it also dismisses the notice -->
+      <button type="button" class="notice__action" data-action="notice-action" hidden>Action</button>
       <button type="button" class="notice__dismiss" data-action="notice-dismiss" aria-label="Dismiss">
         <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
@@ -559,6 +593,7 @@
   <script src="saved-suggestions.js"></script>
   <script src="vendor/ag-psd-31.0.3.js"></script>
   <script src="psd-import.js"></script>
+  <script src="folder-link.js"></script>
   <script src="bindery-proofing.js"></script>
   <script src="proof-page.js"></script>
 
@@ -570,9 +605,10 @@
     App shell         → form.app                     → .app (grid: job bar / pages / canvas / drawer)
     JobBar            → header.job-bar (title, footer style, designer, settings) → .job-bar, .segmented
     DataSourceStatus  → div.data-status (toast, bottom of the window) → .data-status
-    JobDetails        → section.job-details (above the canvas toolbar; job fields + Save PDF) → .job-details, .field, .button-save
+    JobDetails        → section.job-details (above the canvas toolbar; Link folder, job fields, Save PDF) → .job-details, .field, .button-save
+    FolderLink        → div.folder-link (inside JobDetails; states via data-state) → .folder-link, .button-secondary
     SettingsDialog    → dialog#settings-dialog + #tpl-saved-item → .settings-dialog, .saved-list
-    PagesPanel        → nav.pages-panel + #tpl-page-item → .pages-panel, .page-item
+    PagesPanel        → nav.pages-panel + #tpl-page-item (incl. PageFlags: art changed / not in folder) → .pages-panel, .page-item
     Canvas            → main.canvas (toolbar: page name, Edit option, Add images; notices; stage) → .canvas, .notices
     ProofPage         → article.proof-page (17 x 11 in; this is the PDF) → .proof-page
     ProofHeader       → header.proof-header (running header: job info) → .proof-header
@@ -592,6 +628,9 @@
     • Drag & drop reorder (sortable.js)   → Angular CDK drag-drop
     • Saved Mgmt Group / Property names   → localStorage via saved-suggestions.js
     • Save PDF (window.print, @page 17in 11in) → same approach as the MCS
+    • Folder link (folder-link.js, File System Access API, Chrome/Edge only; not remembered)
+                                          → a folder service; images re-found by file name on reload
+    • Page flags (flagsOf in proof-page.js) → derived from each image's modified vs. saved date
 
   Data (sheet-data.js) → becomes a real API/service:
     Google Sheet tabs: materials, binding_types, features, bookcloth, Sizes.

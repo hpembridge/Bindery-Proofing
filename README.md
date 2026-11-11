@@ -17,7 +17,7 @@ This isn't a Platinum tool, so it doesn't use the PL-shared design tokens or sid
 
 ## Using it
 
-- **Job details (above the canvas):** Job Number, Management Group, Property Name and Job Name. They apply to every page and print in the running header.
+- **Job details (above the canvas):** Job Number, Management Group, Property Name and Job Name. They apply to every page and print in the running header. **Link folder** starts the row and **Save PDF** ends it.
 - **Top bar:** Light footer / Dark footer, Designer (remembered in this browser) and Settings.
 - **Pages (left):** one page per option. Click a page to show it. Use **+** to add a page, the hover buttons to duplicate or delete it, and the grip to drag pages into a new order. Options are renumbered to match.
 - **Canvas (middle):** the selected page at 17 × 11, scaled to fit the window.
@@ -40,7 +40,7 @@ This isn't a Platinum tool, so it doesn't use the PL-shared design tokens or sid
 | CMYK, Lab, Duotone or Multichannel PSD | Not added. The color mode is read from the PSD's header, and a message says to save an RGB copy or export a PNG. Browsers can't show these colors accurately. |
 | PNG / JPG | Added. Browsers can't read their resolution, so 300 ppi is assumed. If it's different, put the resolution in the file name, e.g. `cover@150.png`. |
 
-Images are kept only until the page is reloaded.
+Images are kept only until the page is reloaded. A [linked folder](#linking-the-proofs-folder) can bring them back.
 
 PSDs are read with **ag-psd** (MIT license, `vendor/ag-psd-31.0.3.js`). It's kept in the repo so the tool works offline and doesn't change unexpectedly.
 
@@ -73,6 +73,7 @@ A toast at the bottom of the window shows where the lists came from. It fades ou
 | `bindery-proofing.css` | All styles, in component order |
 | `proof-page.js` | Pages panel, canvas, image fitting, footer, Edit drawer, Save PDF |
 | `psd-import.js` | Reads PSD/PNG/JPG files and checks them |
+| `folder-link.js` | Links the proof's art folder for this session (Chrome/Edge only) |
 | `bindery-proofing.js` | The option form (rows, comboboxes, chips, toggles, custom features) |
 | `combobox.js` | Type-ahead fields |
 | `size-format.js` | Parses, validates and formats sizes (W x H, folded/flat) |
@@ -96,6 +97,33 @@ A toast at the bottom of the window shows where the lists came from. It fades ou
 
 Like the MCS, **Save PDF** writes the proof's data into the PDF as tiny white text on the first page, between `%%BP%%` marks. That covers the job fields, footer style, every option's form and any custom features. **Drop that PDF anywhere on the tool** to reload it. The PDF is read with pdf.js, the same version the MCS loads from cdnjs. If you already have work open, it asks before replacing it.
 
-Images aren't stored in the PDF, because they'd make it huge. Their labels are, so after a reload a message lists which images each option had (e.g. "Option 1: Cover, Interior") so you can drop the PSDs back in.
+Images aren't stored in the PDF, because they'd make it huge. Their labels and file names are. If the job's folder is linked, the images are added back automatically (see below). Otherwise a message lists which images each option had (e.g. "Option 1: Cover, Interior") so you can drop them back in.
 
 **Designer** is remembered in this browser and filled in automatically, like the MCS. It uses the same storage key (`mcs_designer`), so the two tools share it when they're opened from the same address.
+
+## Linking the proof's folder
+
+**Chrome and Edge only.** Safari and Firefox can't link a folder, so the button doesn't show there.
+
+- **Link folder** (at the start of the job details) picks the folder with this proof's art. It isn't remembered: each proof links its own folder, and the link lasts until the page is closed or reloaded.
+- Only files directly in the folder are used. Subfolders are ignored.
+- With a folder linked:
+  - **Reloading a PDF** adds the images back by file name, in their original order and with their labels. You can link the folder before or after dropping the PDF.
+  - **↻ (Reload images)** re-reads every image on the proof from the folder, e.g. after a PSD is re-saved. Labels and order stay the same.
+  - **Add images** opens the file picker in that folder.
+- Browsers only give the folder's name, not its full path. The PDF stores the name, so the reload message can say which folder it was.
+
+### Flags on the Pages panel
+
+Each image's **last-modified date** is saved in the PDF. When the images come back from the linked folder (or ↻ re-reads them), the dates are compared:
+
+| Flag | Means | Message above the canvas |
+|---|---|---|
+| Amber **\*** badge | **Art changed** since the proof was saved, so the specs may need edits. | "Artwork updated since last proof." with **Review Option N specifications** (one per option): opens that option in the Edit drawer. |
+| Red **?** badge | **None of the option's files** are in the folder, so it may have been omitted. (If only some are missing, nothing is flagged.) | "Files for option N weren't found in the artwork folder." with **Remove missing option(s)**: deletes those options. |
+
+The badges sit in the top-left corner of the page's thumbnail. Hover one to see which files.
+
+Clicking a message's button, or its ✕, closes the message and clears that badge. **Save PDF** also clears all badges, since the new PDF is the new starting point. Dropping a missing file in by hand keeps its original label.
+
+PDFs saved before dates were added can't be compared, so they never show the Art changed flag.

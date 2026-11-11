@@ -7,6 +7,9 @@
 //   • fills the footer live from the job fields and the option's form
 //   • opens the option's form in the Edit drawer
 //   • saves the page as a 17 x 11 PDF (window.print, like the MCS)
+//   • links the proof's art folder (folder-link.js) so images can be found
+//     again by file name after a reload, and flags options whose art changed
+//     (or is missing) since the proof was saved
 //
 // In Angular: images per option + the selected option are component state;
 // render functions become template bindings; fitImages() stays as a helper.
@@ -43,7 +46,8 @@
 
   // ── State ──
   let selected = cards()[0];
-  const images = new WeakMap();   // option card → [{ id, name, label, url, widthIn, heightIn, warnings }]
+  const images = new WeakMap();   // option card → [{ id, file, modified, baseline, name, label, url, widthIn, heightIn, warnings }]
+  const missing = new WeakMap();  // option card → [{ label, file, modified }] images from a reloaded PDF not found yet
   let nextImageId = 1;
   const imagesOf = card => {
     if (!images.has(card)) images.set(card, []);
@@ -124,12 +128,25 @@
       del.setAttribute('aria-label', 'Delete ' + name);
       del.disabled = cards().length === 1;
 
+      // Flags: art changed since the proof was saved / not in the linked folder
+      const flags = flagsOf(card);
+      setFlag(item.querySelector('[data-flag="changed"]'), flags.changed,
+        'Art changed since the proof was saved: ' + flags.changed.join(', ') + '. The specs may need edits.');
+      setFlag(item.querySelector('[data-flag="missing"]'), flags.missing,
+        'Not in the linked folder: ' + flags.missing.join(', ') + '. This option may have been omitted.');
+
       // Thumbnail: the page's first image
       const first = imagesOf(card)[0];
       const thumb = item.querySelector('.page-item__thumb-img');
       if (first) { thumb.src = first.url; thumb.hidden = false; }
       return item;
     }));
+  }
+
+  function setFlag(el, list, text) {
+    el.hidden = !list.length;
+    el.title = list.length ? text : '';
+    el.querySelector('[data-flag-text]').textContent = list.length ? text : '';
   }
 
   function select(card) {
@@ -229,7 +246,14 @@
       const working = notice('info', 'Reading ' + file.name + '…');
       try {
         const image = await window.ImageImport.read(file);
-        imagesOf(card).push(Object.assign({ id: nextImageId++, label: image.name }, image));
+        // A file this option had in the reloaded PDF: keep its label and saved date
+        const list = missing.get(card) || [];
+        const was = list.find(m => m.file && m.file.toLowerCase() === file.name.toLowerCase());
+        if (was) list.splice(list.indexOf(was), 1);
+        imagesOf(card).push(Object.assign({ id: nextImageId++, file: file.name, modified: file.lastModified }, image, {
+          label: was ? was.label : image.name,
+          baseline: (was && was.modified) || file.lastModified,
+        }));
         working.remove();
         image.warnings.forEach(w => notice('warning', file.name + ': ' + w));
       } catch (err) {
@@ -241,14 +265,46 @@
     }
   }
 
-  function notice(kind, text) {
+  // opts (optional):
+  //   action: { label, run }  → a button in the notice; clicking it runs `run`,
+  //                             then clears and dismisses like the ✕
+  //   clear: fn               → runs when the notice is dismissed (✕ or action)
+  //   flag: 'changed' | 'missing' → marks page-flag notices so they're replaced, not stacked
+  const noticeHandlers = new WeakMap();   // notice li → opts
+
+  function notice(kind, text, opts) {
     const li = tpl('tpl-notice');
     li.dataset.kind = kind;
     li.querySelector('.notice__text').textContent = text;
+    if (opts) {
+      noticeHandlers.set(li, opts);
+      if (opts.flag) li.dataset.flagNotice = opts.flag;
+      if (opts.action) {
+        const btn = li.querySelector('.notice__action');
+        btn.textContent = opts.action.label;
+        btn.hidden = false;
+      }
+    }
     li.querySelector('.notice__icon').className = 'fa-solid notice__icon ' +
       ({ info: 'fa-circle-notch fa-spin', 'info-done': 'fa-circle-check', warning: 'fa-triangle-exclamation', error: 'fa-circle-exclamation' })[kind];
     notices.appendChild(li);
+    if (kind === 'info-done') dismissLater(li);   // nothing to act on: fades out by itself
     return li;
+  }
+
+  // Fade a notice out after a few seconds (stays while hovered), then remove it
+  const NOTICE_MS = 5000;
+  function dismissLater(li) {
+    let timer;
+    const start = () => { timer = setTimeout(() => {
+      li.classList.add('is-dismissed');
+      const remove = () => li.remove();
+      li.addEventListener('transitionend', remove, { once: true });
+      setTimeout(remove, 450);   // no transition (reduced motion)
+    }, NOTICE_MS); };
+    li.addEventListener('mouseenter', () => clearTimeout(timer));
+    li.addEventListener('mouseleave', start);
+    start();
   }
 
 
@@ -360,6 +416,7 @@
     select(current);
     pages.forEach(p => { p.querySelector('[data-state-embed]').textContent = ''; });
     if (pages[0]) pages[0].querySelector('[data-state-embed]').textContent = MARK + encodeState(captureState()) + MARK;
+    resetBaselines();   // the saved dates are the new "last seen"
     printPages.replaceChildren(...pages);
 
     // Make sure every image is ready before the dialog opens
@@ -384,10 +441,11 @@
   // are written into the first page as tiny white text between %%BP%% marks.
   // Dropping that PDF back on the tool reads the text (pdf.js) and rebuilds
   // the proof. Images aren't stored (they'd make the PDF huge); their labels
-  // are, so the tool can say which files to drop back in.
+  // and file names are, so a linked folder can fill them back in, or the tool
+  // can say which files to drop back in.
 
   const MARK = '%%BP%%';
-  const STATE_VERSION = 1;
+  const STATE_VERSION = 3;   // 2: images are { label, file } + folder name; 3: + modified date
 
   function captureState() {
     const job = readJob();
@@ -399,7 +457,8 @@
       theme: page.dataset.footerTheme,
       custom: window.BP.serializeCustom(),
       options: window.BP.serializeOptions(),
-      images: cards().map(card => imagesOf(card).map(i => i.label)),
+      images: cards().map(card => imagesOf(card).map(i => ({ label: i.label, file: i.file || '', modified: i.modified || 0 }))),
+      folder: folder.handle ? folder.handle.name : '',
     };
   }
 
@@ -467,12 +526,221 @@
 
     window.BP.restoreOptions(state.options || [], state.custom);   // fires bp:restored
 
-    // Images aren't in the PDF: say which ones to drop back in
-    const missing = (state.images || [])
-      .map((labels, i) => labels.length ? 'Option ' + (i + 1) + ': ' + labels.join(', ') : '')
-      .filter(Boolean);
-    notice('info-done', 'Reloaded ' + fileName + (state.d ? ' (saved ' + state.d + ')' : '') + '.' +
-      (missing.length ? ' Drop the images back in — ' + missing.join('; ') + '.' : ''));
+    // Images aren't in the PDF, only their labels, file names and modified
+    // dates. Keep the list so a linked folder (or dropped files) can fill
+    // them back in. Version 1 PDFs stored labels only; version 2 no dates.
+    cards().forEach((card, i) => missing.set(card, ((state.images || [])[i] || [])
+      .map(entry => typeof entry === 'string' ? { label: entry, file: '', modified: 0 } : entry)));
+    notice('info-done', 'Reloaded ' + fileName + (state.d ? ' (saved ' + state.d + ')' : '') + '.');
+
+    if (!missingSummary()) return;
+    if (folder.handle) { fillFromFolder(); return; }
+    notice('warning', (window.FolderLink.supported ? 'Link the job’s folder' +
+      (state.folder ? ' (it was ' + state.folder + ')' : '') + ' to add the images, or drop them in — ' : 'Drop the images back in — ') +
+      missingSummary() + '.');
+  }
+
+  // "Option 1: Cover, Interior; Option 2: Cover"
+  function missingSummary() {
+    return cards().map((card, i) => {
+      const list = missing.get(card) || [];
+      return list.length ? 'Option ' + (i + 1) + ': ' + list.map(m => m.label).join(', ') : '';
+    }).filter(Boolean).join('; ');
+  }
+
+
+  // ══ Page flags: art changed / not in the folder ══════════════════
+  // Each image keeps its file's last-modified date (`modified`) and the date
+  // the proof last saw (`baseline`: from the reloaded PDF, or when the image
+  // was added). Save PDF moves the baseline up to now and clears both flags.
+  //   • changed: an image file is newer than its baseline → the art was
+  //     edited, so the specs in the footer may need edits too
+  //   • missing: an image from the reloaded PDF isn't in the linked folder →
+  //     the option may have been omitted
+
+  const changedImages = card => imagesOf(card).filter(i => i.baseline && i.modified > i.baseline);
+
+  // `missing` only flags an option when none of its files were found
+  // (some missing isn't an omitted option)
+  function flagsOf(card) {
+    const notFound = folder.handle ? missing.get(card) || [] : [];
+    return {
+      changed: changedImages(card).map(i => i.file || i.label),
+      missing: notFound.length && !imagesOf(card).length ? notFound.map(m => m.file || m.label) : [],
+    };
+  }
+
+  // Clearing a flag (✕ or the notice's button)
+  function clearChanged(card) {
+    imagesOf(card).forEach(i => { i.baseline = i.modified; });
+    renderPages();
+  }
+  function clearMissing(list) {
+    list.forEach(card => missing.set(card, []));
+    renderPages();
+  }
+
+  function removeOptions(list) {
+    list.forEach(card => window.BP.removeOption(card));   // the last option always stays
+  }
+
+  // "2", "2 and 4", "2, 4 and 6"
+  const joinNumbers = nums => nums.length < 2 ? String(nums[0])
+    : nums.slice(0, -1).join(', ') + ' and ' + nums[nums.length - 1];
+
+  // One notice per option with changed art; one notice for options whose
+  // files are all gone. Replaces any flag notices already showing.
+  function reportFlags() {
+    notices.querySelectorAll('[data-flag-notice]').forEach(n => n.remove());
+    const all = cards();
+
+    all.forEach((card, i) => {
+      if (!flagsOf(card).changed.length) return;
+      notice('warning', 'Artwork updated since last proof.', {
+        flag: 'changed',
+        action: { label: 'Review Option ' + (i + 1) + ' specifications', run: () => { select(card); openDrawer(); } },
+        clear: () => clearChanged(card),
+      });
+    });
+
+    const gone = all.filter(card => flagsOf(card).missing.length);
+    if (gone.length) {
+      const nums = gone.map(card => all.indexOf(card) + 1);
+      notice('warning', 'Files for ' + (gone.length === 1 ? 'option ' : 'options ') + joinNumbers(nums) +
+        ' weren’t found in the artwork folder.', {
+        flag: 'missing',
+        action: { label: 'Remove missing option' + (gone.length === 1 ? '' : 's'), run: () => removeOptions(gone) },
+        clear: () => clearMissing(gone),
+      });
+    }
+  }
+
+  // Save PDF: what was just saved is the new baseline, and images that
+  // weren't found aren't part of the proof anymore, so both flags clear
+  function resetBaselines() {
+    cards().forEach(card => {
+      imagesOf(card).forEach(i => { i.baseline = i.modified; });
+      missing.set(card, []);
+    });
+    renderPages();
+  }
+
+
+  // ══ Folder link (folder-link.js) ═════════════════════════════════
+  // Each proof links its own folder; nothing is remembered. With it:
+  //   • images from a reloaded PDF are found again by file name, and checked
+  //     against the dates saved in the PDF
+  //   • ↻ re-reads every image on the proof (after a PSD is re-saved)
+  //   • Add images opens the file picker in that folder
+
+  const folderEl = document.getElementById('folder-link');
+  const folder = { handle: null };
+
+  function setFolder(handle) {
+    folder.handle = handle || null;
+    folderEl.dataset.state = handle ? 'linked' : 'none';
+    if (handle) {
+      folderEl.querySelector('[data-folder-name]').textContent = handle.name;
+      folderEl.querySelector('.folder-link__name').title = 'Linked folder: ' + handle.name;
+    }
+    renderPages();   // "not in folder" flags only apply with a folder linked
+  }
+
+  async function linkFolder() {
+    let handle;
+    try {
+      handle = await window.FolderLink.pick();
+    } catch (err) {
+      notice('error', 'Couldn’t open that folder: ' + err.message);
+      return;
+    }
+    if (!handle) return;
+    setFolder(handle);
+    if (missingSummary()) fillFromFolder();
+  }
+
+  // Read a folder file into an image record
+  async function readFromFolder(entry) {
+    const file = await entry.getFile();
+    return { file: file.name, modified: file.lastModified, image: await window.ImageImport.read(file) };
+  }
+
+  // A PDF's image entry → the folder's file. By file name; for version 1
+  // PDFs (labels only), the label + .psd / .png / .jpg.
+  function findEntry(files, wanted) {
+    if (wanted.file) return files.get(wanted.file.toLowerCase()) || null;
+    for (const ext of ['.psd', '.png', '.jpg', '.jpeg']) {
+      const hit = files.get((wanted.label + ext).toLowerCase());
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  // Fill in the images a reloaded PDF had, in their original order and with
+  // their original labels. Anything not found stays in `missing` (flagged).
+  async function fillFromFolder() {
+    const working = notice('info', 'Looking for images in ' + folder.handle.name + '…');
+    let added = 0;
+    try {
+      const files = await window.FolderLink.listImages(folder.handle);
+      for (const card of cards()) {
+        const stillMissing = [];
+        for (const wanted of missing.get(card) || []) {
+          const entry = findEntry(files, wanted);
+          if (!entry) { stillMissing.push(wanted); continue; }
+          try {
+            const { file, modified, image } = await readFromFolder(entry);
+            imagesOf(card).push(Object.assign({ id: nextImageId++, file, modified }, image,
+              { label: wanted.label, baseline: wanted.modified || modified }));
+            added++;
+          } catch (err) {
+            stillMissing.push(wanted);
+            notice('error', err.message);
+          }
+        }
+        missing.set(card, stillMissing);
+      }
+    } catch (err) {
+      notice('error', 'Couldn’t read ' + folder.handle.name + ': ' + err.message);
+    }
+    working.remove();
+    renderArt();
+    renderPages();
+    if (added) notice('info-done', 'Added ' + added + ' image' + (added === 1 ? '' : 's') + ' from ' + folder.handle.name + '.');
+    reportFlags();
+  }
+
+  // ↻: re-read every image on the proof from the folder (same file name),
+  // keeping its label, place and baseline. Then fill in anything missing.
+  async function refreshFromFolder() {
+    const working = notice('info', 'Reloading images from ' + folder.handle.name + '…');
+    let updated = 0;
+    try {
+      const files = await window.FolderLink.listImages(folder.handle);
+      for (const card of cards()) {
+        for (const image of imagesOf(card)) {
+          const entry = image.file && files.get(image.file.toLowerCase());
+          if (!entry) continue;
+          try {
+            const { modified, image: fresh } = await readFromFolder(entry);
+            Object.assign(image, fresh, { label: image.label, modified });
+            updated++;
+          } catch (err) {
+            notice('error', err.message);
+          }
+        }
+      }
+    } catch (err) {
+      notice('error', 'Couldn’t read ' + folder.handle.name + ': ' + err.message);
+    }
+    working.remove();
+    renderArt();
+    renderPages();
+    if (missingSummary()) { fillFromFolder(); return; }   // reports flags too
+    notice('info-done', updated
+      ? 'Reloaded ' + updated + ' image' + (updated === 1 ? '' : 's') + ' from ' + folder.handle.name + '.'
+      : 'None of the images on this proof are in ' + folder.handle.name + '.');
+    reportFlags();
   }
 
   document.addEventListener('bp:restored', e => {
@@ -508,7 +776,18 @@
       case 'edit-option': openDrawer(); break;
       case 'close-drawer': closeDrawer(); break;
       case 'save-pdf': savePdf(); break;
-      case 'notice-dismiss': btn.closest('.notice').remove(); break;
+      case 'folder-link': linkFolder(); break;
+      case 'folder-refresh': refreshFromFolder(); break;
+      case 'folder-unlink': setFolder(null); break;
+      case 'notice-dismiss':
+      case 'notice-action': {
+        const li = btn.closest('.notice');
+        const opts = noticeHandlers.get(li) || {};
+        if (btn.dataset.action === 'notice-action' && opts.action) opts.action.run();
+        if (opts.clear) opts.clear();
+        li.remove();
+        break;
+      }
       case 'image-remove': {
         const id = btn.closest('.proof-image').dataset.id;
         const list = imagesOf(selected);
@@ -590,6 +869,18 @@
     const images = files.filter(f => window.ImageImport.accepts(f));
     if (images.length) importFiles(images);
   });
+  // With a linked folder, Add images opens the file picker in that folder
+  form.querySelector('[data-add-images]').addEventListener('click', async e => {
+    if (!folder.handle || !('showOpenFilePicker' in window)) return;   // normal file input
+    e.preventDefault();
+    try {
+      const files = await window.FolderLink.pickFiles(folder.handle);
+      if (files.length) importFiles(files);
+    } catch (err) {
+      notice('error', 'Couldn’t open the file picker: ' + err.message);
+    }
+  });
+
   imageInput.addEventListener('change', () => {
     importFiles(imageInput.files);
     imageInput.value = '';
@@ -600,7 +891,8 @@
   // ── Init ──
   select(selected);
   fitStage();
+  folderEl.hidden = !window.FolderLink.supported;   // Chrome / Edge only
 
   // For testing / devtools
-  window.ProofPage = { importFiles, loadFromPdf };
+  window.ProofPage = { importFiles, loadFromPdf, setFolder, refreshFromFolder };
 })();

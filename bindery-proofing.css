@@ -983,6 +983,41 @@ body {
 .job-details__field--wide { flex-grow: 1.6; }
 .job-details__field > .field { width: 100%; }
 
+/* ── FolderLink (inside JobDetails) ── */
+
+.folder-link {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.folder-link[hidden] { display: none; }
+
+/* Buttons in the job row match the fields' height */
+.job-details .button-secondary { height: var(--field-height); }
+
+.folder-link__name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 200px;
+  height: var(--field-height);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--gray-50);
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.folder-link__name .fa-folder { color: var(--accent-600); }
+.folder-link__name-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* Which parts show in each state */
+.folder-link[data-state="none"] > :not(.folder-link__add),
+.folder-link[data-state="linked"] .folder-link__add { display: none; }
+
 /* Save PDF: last in the row, same height as the fields
    (.job-details prefix so it beats the 32px in .button-save, defined later) */
 .job-details .job-details__save {
@@ -1087,6 +1122,7 @@ body {
 
 /* 17 x 11 thumbnail */
 .page-item__thumb {
+  position: relative;   /* for the flag badges */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1113,6 +1149,44 @@ body {
 }
 
 .page-item.is-selected .page-item__name { color: var(--accent-700); }
+
+/* PageFlags: rounded-square badges in the thumbnail's top-left corner
+   (light fill, colored icon). The explanation is in the title (tooltip)
+   and visually-hidden text. */
+.page-item__flags {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  display: flex;
+  gap: var(--space-1);
+}
+
+.page-item__flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+}
+
+.page-item__flag[hidden] { display: none; }
+
+/* * art changed: check the specs */
+.page-item__flag--changed {
+  border-color: var(--amber-300);
+  background: var(--amber-50);
+  color: var(--amber-500);
+}
+
+/* ? not in folder: maybe omitted */
+.page-item__flag--missing {
+  border-color: rgb(239 68 68 / 0.3);   /* same as .notice[data-kind="error"] */
+  background: var(--red-50);
+  color: var(--red-500);
+}
 
 /* Duplicate / Delete appear on hover or focus */
 .page-item__actions {
@@ -1170,7 +1244,8 @@ body {
 /* Edit option and Add images sit on the right */
 .canvas__toolbar [data-action="edit-option"] { margin-left: auto; }
 
-.canvas__file-btn,
+/* Shared buttons: .button-secondary (Add images, Edit option, Link folder…) and .button-save (Save PDF) */
+.button-secondary,
 .button-save {
   display: inline-flex;
   align-items: center;
@@ -1187,8 +1262,9 @@ body {
   transition: background var(--transition), color var(--transition);
 }
 
-.canvas__file-btn:hover { background: var(--accent-50); color: var(--accent-700); }
-.canvas__file-btn:focus-within,
+.button-secondary:hover { background: var(--accent-50); color: var(--accent-700); }
+.button-secondary:focus-visible,
+.button-secondary:focus-within,
 .button-save:focus-visible { outline: none; box-shadow: var(--ring); }
 
 /* Primary button: Save PDF */
@@ -1274,6 +1350,14 @@ body {
   font-size: var(--text-xs);
 }
 
+/* Done messages (info-done) fade out by themselves (proof-page.js) */
+.notice { transition: opacity 400ms ease-out; }
+.notice.is-dismissed { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .notice { transition: none; }
+}
+
 .notice__icon { margin-top: 2px; }
 .notice[data-kind="info"] .notice__icon,
 .notice[data-kind="info-done"] .notice__icon { color: var(--accent-600); }
@@ -1291,6 +1375,24 @@ body {
 
 .notice__dismiss:hover { opacity: 1; }
 .notice[data-kind="info"] .notice__dismiss { display: none; }
+
+/* Action button inside a notice (takes the notice's color) */
+.notice__action {
+  flex: none;
+  margin: -2px 0;
+  padding: 2px var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  cursor: pointer;
+}
+
+.notice__action[hidden] { display: none; }
+.notice__action:hover { background: transparent; }
+.notice__action:focus-visible { outline: none; box-shadow: var(--ring); }
 
 
 /* ── ProofPage (17 x 11 in, real size; this is the PDF) ── */
