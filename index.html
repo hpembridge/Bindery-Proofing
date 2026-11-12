@@ -13,108 +13,263 @@
 </head>
 
 <body>
-  <main class="main">
-    <form class="proof-form" id="proof-form" novalidate>
+  <!-- One form wraps the whole app so the option editors and job fields share
+       the same delegated event handlers (bindery-proofing.js). -->
+  <form class="app" id="proof-form" novalidate>
 
-      <!-- ════════════ JobInfo ════════════ -->
-      <section class="job-info" aria-labelledby="job-info-title">
-        <div class="job-info__header">
-          <h1 class="job-info__title" id="job-info-title">Create Proof Slip</h1>
-          <div class="job-info__meta">
-            <label class="visually-hidden" for="job-number">Job Number</label>
-            <input class="field field--compact" id="job-number" name="jobNumber" type="text" placeholder="Job Number" />
-            <label class="visually-hidden" for="designer">Designer</label>
-            <input class="field field--compact" id="designer" name="designer" type="text" placeholder="Designer" />
-            <button type="button" class="icon-btn" id="settings-open" aria-label="Settings" title="Settings" aria-haspopup="dialog">
-              <i class="fa-solid fa-gear" aria-hidden="true"></i>
-            </button>
-          </div>
+    <!-- ════════════ JobBar — app title, footer style, designer, settings ════════════ -->
+    <header class="job-bar" aria-labelledby="job-bar-title">
+      <h1 class="job-bar__title" id="job-bar-title">Proof Builder</h1>
+
+      <!-- FooterTheme: light footer / dark footer (both appear in the creative examples) -->
+      <div class="segmented job-bar__theme" role="group" aria-label="Footer style">
+        <button type="button" class="segmented__btn" data-footer-theme="light" aria-pressed="true">Light footer</button>
+        <button type="button" class="segmented__btn" data-footer-theme="dark" aria-pressed="false">Dark footer</button>
+      </div>
+
+      <!-- Designer stays up here: it's about who's making the proof, not the job -->
+      <div class="job-bar__designer">
+        <label class="visually-hidden" for="designer">Designer</label>
+        <input class="field" id="designer" name="designer" type="text" placeholder="Designer" />
+      </div>
+
+      <button type="button" class="icon-btn" id="settings-open" aria-label="Settings" title="Settings" aria-haspopup="dialog">
+        <i class="fa-solid fa-gear" aria-hidden="true"></i>
+      </button>
+
+    </header>
+    <!-- ════════════ /JobBar ════════════ -->
+
+
+    <!-- ════════════ PagesPanel — one page per option ════════════ -->
+    <nav class="pages-panel" aria-labelledby="pages-title">
+      <div class="pages-panel__header">
+        <h2 class="pages-panel__title" id="pages-title">Pages</h2>
+        <button type="button" class="pages-panel__add" data-action="page-add" aria-label="Add page" title="Add page">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        </button>
+      </div>
+      <!-- one #tpl-page-item per option; drag to reorder (sortable.js) -->
+      <ol class="pages-panel__list" id="pages-list" data-sortable></ol>
+    </nav>
+    <!-- ════════════ /PagesPanel ════════════ -->
+
+
+    <!-- ════════════ Canvas — the 17 x 11 proof for the selected option ════════════ -->
+    <main class="canvas" id="canvas">
+
+      <!-- JobDetails — the job this proof is for (prints in the running header) -->
+      <section class="job-details" aria-label="Job details">
+        <!-- FolderLink — connects this proof's art folder (Chrome/Edge only; stays hidden in other browsers).
+             Not remembered: each proof links its own folder. data-state: none | linked -->
+        <div class="folder-link" id="folder-link" data-state="none" hidden>
+          <button type="button" class="button-secondary folder-link__add" data-action="folder-link">
+            <i class="fa-solid fa-folder-plus" aria-hidden="true"></i> Link folder
+          </button>
+          <span class="folder-link__name" title="Linked folder">
+            <i class="fa-solid fa-folder" aria-hidden="true"></i>
+            <span class="folder-link__name-text" data-folder-name>Art</span>
+          </span>
+          <button type="button" class="icon-btn folder-link__refresh" data-action="folder-refresh"
+            aria-label="Reload images from the folder" title="Reload images from the folder">
+            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="icon-btn folder-link__unlink" data-action="folder-unlink"
+            aria-label="Unlink folder" title="Unlink folder">
+            <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
+          </button>
         </div>
-
-        <div class="job-info__body">
-          <!-- Management Group / Customer: free text, with suggestions saved in this browser (saved-suggestions.js) -->
-          <label class="visually-hidden" for="management-group">Management Group</label>
-          <div class="combobox job-info__field" data-combobox data-freeform data-source="savedManagementGroup">
-            <input class="field combobox__input" id="management-group" name="managementGroup" type="text" placeholder="Management Group"
+        <div class="job-details__field job-details__field--sm">
+          <label class="job-details__label" for="job-number">Job Number</label>
+          <input class="field" id="job-number" name="jobNumber" type="text" placeholder="e.g. 395309" />
+        </div>
+        <!-- Management Group / Property Name: free text, with suggestions saved in this browser (saved-suggestions.js) -->
+        <div class="job-details__field">
+          <label class="job-details__label" for="management-group">Management Group</label>
+          <div class="combobox" data-combobox data-freeform data-source="savedManagementGroup">
+            <input class="field combobox__input" id="management-group" name="managementGroup" type="text" placeholder="If applicable"
               role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
             <ul class="combobox__listbox" role="listbox" hidden></ul>
           </div>
-          <label class="visually-hidden" for="customer">Customer</label>
-          <div class="combobox job-info__field" data-combobox data-freeform data-source="savedCustomer">
-            <input class="field combobox__input" id="customer" name="customer" type="text" placeholder="Customer"
+        </div>
+        <div class="job-details__field">
+          <label class="job-details__label" for="customer">Property Name</label>
+          <div class="combobox" data-combobox data-freeform data-source="savedCustomer">
+            <input class="field combobox__input" id="customer" name="customer" type="text"
               role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
             <ul class="combobox__listbox" role="listbox" hidden></ul>
           </div>
-          <label class="visually-hidden" for="job-description">Job Description</label>
-          <input class="field job-info__field job-info__field--wide" id="job-description" name="jobDescription" type="text" placeholder="Job Description" />
         </div>
-
-        <!-- DataSourceStatus — prototype only: shows where the suggestion lists came from -->
-        <p class="data-status" id="data-status" data-state="loading" role="status">
-          <i class="fa-solid fa-circle-notch fa-spin data-status__icon" aria-hidden="true"></i>
-          <span class="data-status__text">Loading lists from the spreadsheet…</span>
-        </p>
+        <div class="job-details__field job-details__field--wide">
+          <label class="job-details__label" for="job-description">Job Name</label>
+          <input class="field" id="job-description" name="jobDescription" type="text" />
+        </div>
+        <button type="button" class="button-save job-details__save" data-action="save-pdf">
+          <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Save PDF
+        </button>
       </section>
-      <!-- ════════════ /JobInfo ════════════ -->
+
+      <div class="canvas__toolbar">
+        <span class="canvas__page-name" id="canvas-page-name">Option 1</span>
+        <button type="button" class="button-secondary" data-action="edit-option">
+          <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit option
+        </button>
+        <!-- With a linked folder, Add images opens the file picker in that folder (proof-page.js) -->
+        <label class="button-secondary" data-add-images>
+          <i class="fa-solid fa-image" aria-hidden="true"></i> Add images
+          <input class="visually-hidden" id="image-input" type="file" accept=".psd,image/png,image/jpeg" multiple />
+        </label>
+      </div>
+
+      <!-- ImportNotices — problems with dropped files (screen only) -->
+      <ul class="notices" id="notices" aria-live="polite"></ul>
+
+      <!-- Stage scales the page to fit; drop files anywhere on it -->
+      <div class="canvas__stage" id="canvas-stage">
+        <div class="canvas__sizer" id="canvas-sizer">
+
+          <!-- ──── ProofPage (17 x 11 in — this is the PDF) ──── -->
+          <article class="proof-page" id="proof-page" data-footer-theme="light">
+
+            <!-- ProofHeader: running header, no labels.
+                 Left: "Mgmt Group / Property Name"   Right: "Job # Job Name" + [Option N] chip -->
+            <header class="proof-header" id="proof-header">
+              <p class="proof-header__left" data-h-left>Station Casinos / Sunset Hotel &amp; Casino</p>
+              <p class="proof-header__right">
+                <span data-h-right>418745 Sunset Bar Check Presenter</span>
+                <!-- only when the job has more than one option -->
+                <span class="proof-header__option" data-h-option>Option 1</span>
+              </p>
+            </header>
+
+            <!-- Art area: dropped images, scaled together to fit -->
+            <div class="proof-page__art" id="proof-art" data-sortable data-axis="x">
+              <!-- one #tpl-proof-image per image -->
+            </div>
+
+            <!-- Empty state (screen only) -->
+            <div class="proof-page__empty" id="proof-empty">
+              <i class="fa-solid fa-file-arrow-up proof-page__empty-icon" aria-hidden="true"></i>
+              <p class="proof-page__empty-text">Drop PSD files here</p>
+              <p class="proof-page__empty-hint">or use Add images. PNG and JPG work too.</p>
+            </div>
+
+            <!-- ProofFooter: full width, height follows its content -->
+            <!-- StateEmbed: the proof's data as hidden text (print only, first page).
+                 Dropping the saved PDF back onto the tool reads it to reload. -->
+            <p class="state-embed" data-state-embed></p>
+
+            <footer class="proof-footer" id="proof-footer">
+              <div class="proof-footer__sections" id="proof-footer-sections">
+                <section class="proof-footer__section" data-f-section="material">
+                  <h3 class="proof-footer__label">Material</h3>
+                  <ul class="proof-footer__list" data-f-list></ul>
+                </section>
+                <section class="proof-footer__section" data-f-section="inserts">
+                  <h3 class="proof-footer__label">Inserts</h3>
+                  <ul class="proof-footer__list" data-f-list></ul>
+                </section>
+                <!-- one #tpl-footer-type-section per feature type (Decoration, Feature…) goes here -->
+              </div>
+
+              <!-- Edit (screen only): opens this option's form -->
+              <button type="button" class="proof-footer__edit" data-action="edit-option">
+                <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit
+              </button>
+
+              <div class="proof-footer__logo">
+                <!-- both logos are in the markup; CSS shows the one that suits the footer style -->
+                <img class="proof-footer__logo-img proof-footer__logo-img--on-dark" src="assets/logo-on-dark.png" alt="Cleveland Menu, est. 1930" />
+                <img class="proof-footer__logo-img proof-footer__logo-img--on-light" src="assets/logo-on-light.png" alt="Cleveland Menu, est. 1930" />
+              </div>
+            </footer>
+          </article>
+          <!-- ──── /ProofPage ──── -->
+
+        </div>
+      </div>
+    </main>
+    <!-- ════════════ /Canvas ════════════ -->
 
 
-      <!-- ════════════ OptionList ════════════ -->
+    <!-- ════════════ EditDrawer — the selected option's form ════════════ -->
+    <aside class="edit-drawer" id="edit-drawer" aria-labelledby="edit-drawer-title" hidden>
+      <div class="edit-drawer__header">
+        <h2 class="edit-drawer__title" id="edit-drawer-title">Edit Option 1</h2>
+        <button type="button" class="icon-btn" data-action="close-drawer" aria-label="Close editor">
+          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <!-- All option forms live here; only the selected one is shown -->
       <div class="option-list" id="option-list">
 
-        <!-- ──────── OptionCard (Option 1 — same structure as #tpl-option-card) ──────── -->
-        <section class="option-card" data-option>
-          <header class="option-card__header">
-            <h2 class="option-card__title" data-option-title>Option 1</h2>
-            <div class="option-card__actions">
-              <button type="button" class="option-card__action" data-action="duplicate-option" aria-label="Duplicate Option 1" title="Duplicate">
-                <i class="fa-solid fa-copy" aria-hidden="true"></i>
-              </button>
-              <button type="button" class="option-card__action option-card__delete" data-action="remove-option" aria-label="Delete Option 1" title="Delete">
-                <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
-              </button>
-            </div>
-          </header>
-
-          <div class="option-card__body">
-            <!-- Each section starts with no rows; "Add …" clones the row templates below -->
-
-            <!-- BindingTypesSection -->
-            <fieldset class="option-section">
-              <legend class="option-section__title">Binding Types</legend>
-              <div class="option-section__rows" data-rows="binding" data-sortable></div>
-              <button type="button" class="add-btn" data-action="add-row" data-row-type="binding">
-                <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Binding Type
-              </button>
-            </fieldset>
-
-            <!-- MaterialsSection -->
-            <fieldset class="option-section">
-              <legend class="option-section__title">Materials</legend>
-              <div class="option-section__rows" data-rows="material" data-sortable></div>
-              <button type="button" class="add-btn" data-action="add-row" data-row-type="material">
-                <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Material
-              </button>
-            </fieldset>
-
-            <!-- FeaturesSection -->
-            <fieldset class="option-section">
-              <legend class="option-section__title">Features</legend>
-              <!-- FeatureToggles — one toggle per feature, grouped by Type (filled from the sheet) -->
-              <div class="feature-toggles" data-feature-toggles></div>
-            </fieldset>
-
+      <!-- ──────── OptionCard (Option 1 — same structure as #tpl-option-card) ──────── -->
+      <section class="option-card" data-option>
+        <header class="option-card__header">
+          <h2 class="option-card__title" data-option-title>Option 1</h2>
+          <div class="option-card__actions">
+            <button type="button" class="option-card__action" data-action="duplicate-option" aria-label="Duplicate Option 1" title="Duplicate">
+              <i class="fa-solid fa-copy" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="option-card__action option-card__delete" data-action="remove-option" aria-label="Delete Option 1" title="Delete">
+              <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+            </button>
           </div>
-        </section>
-        <!-- ──────── /OptionCard ──────── -->
+        </header>
+
+        <div class="option-card__body">
+          <!-- Each section starts with no rows; "Add …" clones the row templates below -->
+
+          <!-- BindingTypesSection -->
+          <fieldset class="option-section">
+            <legend class="option-section__title">Binding Types</legend>
+            <div class="option-section__rows" data-rows="binding" data-sortable></div>
+            <button type="button" class="add-btn" data-action="add-row" data-row-type="binding">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Binding Type
+            </button>
+          </fieldset>
+
+          <!-- MaterialsSection -->
+          <fieldset class="option-section">
+            <legend class="option-section__title">Materials</legend>
+            <div class="option-section__rows" data-rows="material" data-sortable></div>
+            <button type="button" class="add-btn" data-action="add-row" data-row-type="material">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Material
+            </button>
+          </fieldset>
+
+          <!-- FeaturesSection -->
+          <fieldset class="option-section">
+            <legend class="option-section__title">Features</legend>
+            <!-- FeatureToggles — one toggle per feature, grouped by Type (filled from the sheet) -->
+            <div class="feature-toggles" data-feature-toggles></div>
+          </fieldset>
+
+        </div>
+      </section>
+      <!-- ──────── /OptionCard ──────── -->
 
       </div>
-      <!-- ════════════ /OptionList ════════════ -->
+    </aside>
+    <!-- ════════════ /EditDrawer ════════════ -->
 
-      <button type="button" class="add-btn add-btn--block" data-action="add-option">
-        <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Option
+    <!-- ════════════ DataSourceStatus — prototype only: toast showing where the suggestion lists came from.
+         Fixed to the bottom of the window, so it doesn't push the layout around. ════════════ -->
+    <div class="data-status" id="data-status" data-state="loading" role="status">
+      <i class="fa-solid fa-circle-notch fa-spin data-status__icon" aria-hidden="true"></i>
+      <span class="data-status__text">Loading lists from the spreadsheet…</span>
+      <button type="button" class="data-status__close" data-action="dismiss-status" aria-label="Dismiss" title="Dismiss">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
-    </form>
-  </main>
+    </div>
+    <!-- ════════════ /DataSourceStatus ════════════ -->
+
+  </form>
+
+  <!-- PrintPages — filled with one copy of the proof page per option just
+       before printing, so Save PDF makes a single multi-page PDF -->
+  <div class="print-pages" id="print-pages" aria-hidden="true"></div>
 
 
   <!-- ════════════ SettingsDialog ════════════ -->
@@ -153,26 +308,6 @@
     </section>
   </dialog>
   <!-- ════════════ /SettingsDialog ════════════ -->
-
-
-  <!-- ════════════ FooterDock — live proof footer previews ════════════ -->
-  <aside class="footer-dock" id="footer-dock" aria-labelledby="footer-dock-title">
-    <div class="footer-dock__toolbar">
-      <h2 class="footer-dock__title" id="footer-dock-title">Proof Footers</h2>
-      <label class="footer-dock__width">
-        <span>Width</span>
-        <input class="field footer-dock__width-input" id="footer-width" type="number" min="2" max="40" step="0.125" value="10" />
-        <span>in</span>
-      </label>
-      <button type="button" class="footer-dock__toggle" id="footer-dock-toggle" aria-expanded="true" aria-controls="footer-list">
-        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        <span class="visually-hidden">Show or hide footers</span>
-      </button>
-    </div>
-    <!-- one #tpl-footer-preview per option, rebuilt as you edit -->
-    <div class="footer-dock__list" id="footer-list" data-sortable></div>
-  </aside>
-  <!-- ════════════ /FooterDock ════════════ -->
 
 
   <!-- ════════════════════════════════════════════════════════════
@@ -245,7 +380,11 @@
               role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
             <ul class="combobox__listbox" role="listbox" hidden></ul>
           </div>
-          <p class="field-error" data-detail-error hidden>Pick a bookcloth from the list.</p>
+          <!-- Typed something that isn't on the list: allowed (it prints as typed), with a warning -->
+          <p class="field-warning" data-detail-warning hidden>
+            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+            <span data-detail-warning-text></span>
+          </p>
         </div>
         <!-- Function suggestions = functions the chosen material is eligible for -->
         <div class="combobox material-row__function" data-combobox data-source="functions">
@@ -265,7 +404,7 @@
     <div class="feature-toggles__group" role="group" aria-label="Decorations" data-type="Decoration">
       <span class="feature-toggles__label">Decorations</span>
       <div class="feature-toggles__buttons"></div>
-      <!-- CustomFeature — adds a toggle of this type to every option on this slip -->
+      <!-- CustomFeature — adds a toggle of this type to this option only; switching it off removes it -->
       <div class="custom-feature">
         <input class="field custom-feature__input" type="text" placeholder="Custom decoration" aria-label="Custom decoration" />
         <button type="button" class="add-btn" data-action="save-custom-feature">Save</button>
@@ -315,58 +454,86 @@
     <li class="combobox__more" role="presentation">Keep typing to see more</li>
   </template>
 
-  <!-- FooterPreview: toolbar + the footer itself (what gets saved as PDF) -->
-  <template id="tpl-footer-preview">
-    <div class="footer-preview" data-sortable-item>
-      <div class="footer-preview__bar">
-        <!-- drag to reorder options (reorders the option cards too) -->
-        <button type="button" class="drag-handle" data-drag-handle aria-label="Drag to reorder option">
-          <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
+  <!-- PageItem (Pages panel): drag handle, thumbnail, name, actions -->
+  <template id="tpl-page-item">
+    <li class="page-item" data-sortable-item>
+      <button type="button" class="drag-handle page-item__handle" data-drag-handle aria-label="Drag to reorder page">
+        <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="page-item__select" data-action="page-select" aria-current="false">
+        <span class="page-item__thumb">
+          <img class="page-item__thumb-img" alt="" hidden />
+          <!-- PageFlags — badges in the thumbnail's top-left corner, set after a reload with a
+               linked folder (proof-page.js sets title + text). * = art changed, ? = not in folder -->
+          <span class="page-item__flags">
+            <span class="page-item__flag page-item__flag--changed" data-flag="changed" hidden>
+              <i class="fa-solid fa-asterisk" aria-hidden="true"></i>
+              <span class="visually-hidden" data-flag-text></span>
+            </span>
+            <span class="page-item__flag page-item__flag--missing" data-flag="missing" hidden>
+              <i class="fa-solid fa-question" aria-hidden="true"></i>
+              <span class="visually-hidden" data-flag-text></span>
+            </span>
+          </span>
+        </span>
+        <span class="page-item__name">Option 1</span>
+      </button>
+      <span class="page-item__actions">
+        <button type="button" class="page-item__action" data-action="page-duplicate" aria-label="Duplicate Option 1" title="Duplicate">
+          <i class="fa-solid fa-copy" aria-hidden="true"></i>
         </button>
-        <span class="footer-preview__name" data-preview-name>Option 1</span>
-        <button type="button" class="footer-preview__save" data-action="save-pdf">
-          <i class="fa-solid fa-file-pdf" aria-hidden="true"></i> Save PDF
+        <button type="button" class="page-item__action page-item__action--danger" data-action="page-remove" aria-label="Delete Option 1" title="Delete">
+          <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
         </button>
-      </div>
-      <div class="footer-preview__paper">
-
-        <!-- ──── ProofFooter (print output) ──── -->
-        <article class="proof-footer" data-footer>
-          <!-- Every item is a bordered section; they sit side by side and wrap.
-               Lists get .proof-footer__list--bullets when they have more than one item. -->
-          <div class="proof-footer__sections">
-            <!-- Job: "Mgmt Group / Customer" and "Job # - Description - Option N" — blanks are left out -->
-            <section class="proof-footer__section proof-footer__section--job">
-              <p class="proof-footer__value" data-f-line="customer">Omni / Omni Hotels</p>
-              <p class="proof-footer__value" data-f-line="job">25-10422 - Banquet menu covers - Option 1</p>
-            </section>
-            <section class="proof-footer__section" data-f-section="material">
-              <h3 class="proof-footer__label">Material</h3>
-              <ul class="proof-footer__list" data-f-list></ul>
-            </section>
-            <section class="proof-footer__section" data-f-section="inserts">
-              <h3 class="proof-footer__label">Inserts</h3>
-              <ul class="proof-footer__list" data-f-list></ul>
-            </section>
-            <!-- one #tpl-footer-type-section per feature type (Decorations, Features…) goes here -->
-          </div>
-        </article>
-        <!-- ──── /ProofFooter ──── -->
-
-      </div>
-    </div>
+      </span>
+    </li>
   </template>
 
-  <!-- FooterTypeSection: label = the feature type from the sheet, pluralized -->
+  <!-- ProofImage (art area): label, image, "Shown at X%"; controls are screen only -->
+  <template id="tpl-proof-image">
+    <figure class="proof-image" data-sortable-item>
+      <figcaption class="proof-image__label" contenteditable="plaintext-only" spellcheck="false">Cover</figcaption>
+      <div class="proof-image__frame">
+        <img class="proof-image__img" alt="" />
+        <span class="proof-image__controls">
+          <button type="button" class="proof-image__control" data-drag-handle aria-label="Drag to reorder image" title="Drag to reorder">
+            <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="proof-image__control" data-action="image-remove" aria-label="Remove image" title="Remove">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </span>
+        <span class="proof-image__warning" hidden>
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> <span data-warning-text>CMYK</span>
+        </span>
+      </div>
+      <p class="proof-image__scale">Shown at 50%</p>
+    </figure>
+  </template>
+
+  <!-- FooterTypeSection: label = the feature type from the sheet -->
   <template id="tpl-footer-type-section">
     <section class="proof-footer__section" data-f-section="type">
-      <h3 class="proof-footer__label">Decorations</h3>
+      <h3 class="proof-footer__label">Decoration</h3>
       <ul class="proof-footer__list" data-f-list></ul>
     </section>
   </template>
 
   <template id="tpl-footer-item">
-    <li class="proof-footer__item">Front: Bookcloth — Majilite (50)</li>
+    <li class="proof-footer__item">Blind debossed logo</li>
+  </template>
+
+  <!-- Notice (import problems) -->
+  <template id="tpl-notice">
+    <li class="notice" data-kind="error">
+      <i class="fa-solid fa-circle-exclamation notice__icon" aria-hidden="true"></i>
+      <span class="notice__text">Message</span>
+      <!-- Optional action (e.g. "Review Option 1 specifications"); clicking it also dismisses the notice -->
+      <button type="button" class="notice__action" data-action="notice-action" hidden>Action</button>
+      <button type="button" class="notice__dismiss" data-action="notice-dismiss" aria-label="Dismiss">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </li>
   </template>
 
   <!-- SavedItem (Settings dialog) -->
@@ -424,50 +591,49 @@
   <script src="combobox.js"></script>
   <script src="sortable.js"></script>
   <script src="saved-suggestions.js"></script>
+  <script src="vendor/ag-psd-31.0.3.js"></script>
+  <script src="psd-import.js"></script>
+  <script src="folder-link.js"></script>
   <script src="bindery-proofing.js"></script>
-  <script src="proof-footer.js"></script>
+  <script src="proof-page.js"></script>
 
   <!--
   ════════════════════════════════════════════════════════════════
   Implementation notes
   ────────────────────────────────────────────────────────────────
   Components (HTML here → CSS in bindery-proofing.css):
-    JobInfo           → section.job-info            → .job-info, .field
-    OptionList        → div#option-list              → .option-list
-    OptionCard        → section.option-card          → .option-card
-    BindingTypesSection / MaterialsSection / FeaturesSection
-                      → fieldset.option-section      → .option-section, .add-btn
-    BindingRow        → #tpl-binding                 → .spec-row, .binding-row
-    MaterialRow       → #tpl-material                → .material-row (+ __detail)
-    FeatureToggles    → #tpl-feature-group / #tpl-feature-toggle → .feature-toggles, .toggle-btn
-    Combobox          → div.combobox [data-combobox] → .combobox (type-ahead, combobox.js)
-    SizeChipInput     → .binding-row__sizes + #tpl-size-chip → .chip-input, .chip (size-format.js)
+    App shell         → form.app                     → .app (grid: job bar / pages / canvas / drawer)
+    JobBar            → header.job-bar (title, footer style, designer, settings) → .job-bar, .segmented
+    DataSourceStatus  → div.data-status (toast, bottom of the window) → .data-status
+    JobDetails        → section.job-details (above the canvas toolbar; Link folder, job fields, Save PDF) → .job-details, .field, .button-save
+    FolderLink        → div.folder-link (inside JobDetails; states via data-state) → .folder-link, .button-secondary
     SettingsDialog    → dialog#settings-dialog + #tpl-saved-item → .settings-dialog, .saved-list
-    DragHandle        → button[data-drag-handle] in rows, chips, footer bars → .drag-handle (sortable.js)
-    CustomFeature     → .custom-feature (in each #tpl-feature-group) → .custom-feature (slip-only toggle of that type)
-    FooterDock        → aside.footer-dock            → .footer-dock (width control + previews)
-    FooterPreview     → #tpl-footer-preview          → .footer-preview
-    ProofFooter       → article.proof-footer         → .proof-footer (flexbox; this is the PDF)
+    PagesPanel        → nav.pages-panel + #tpl-page-item (incl. PageFlags: art changed / not in folder) → .pages-panel, .page-item
+    Canvas            → main.canvas (toolbar: page name, Edit option, Add images; notices; stage) → .canvas, .notices
+    ProofPage         → article.proof-page (17 x 11 in; this is the PDF) → .proof-page
+    ProofHeader       → header.proof-header (running header: job info) → .proof-header
+    ProofImage        → #tpl-proof-image             → .proof-image
+    ProofFooter       → footer.proof-footer + #tpl-footer-type-section / #tpl-footer-item → .proof-footer
+    EditDrawer        → aside.edit-drawer            → .edit-drawer (holds every OptionCard)
+    OptionCard        → section.option-card / #tpl-option-card → .option-card
+    BindingRow / MaterialRow / FeatureToggles / CustomFeature / SizeChipInput / Combobox / DragHandle
+                      → row + chip templates below   → their own sections in the CSS
 
   Simulated in JS → Angular state/events:
-    • add/remove rows and options        → arrays in a FormArray + @for (all start empty)
-    • "Option N" renumbering             → $index + 1
-    • Combobox filtering + keyboard nav  → a Combobox component (input + listbox)
-    • Feature toggles (aria-pressed)     → a selected-features array per option
-    • Size chips: parse/format/validate  → size-format.js as a pipe + validator;
-                                           chips = a sizes array per binding row
-    • Function suggestions by Material   → computed from the material's eligibility
-    • Bookcloth detail field show/hide   → @if (material.detailList)
-    • Value must match a suggestion      → validator against the list
-    • Drag & drop reorder (sortable.js)  → Angular CDK drag-drop (cdkDropList/cdkDrag/cdkDragHandle)
-    • Saved Mgmt Group / Customer        → localStorage via saved-suggestions.js (a settings service)
-    • Duplicate option                   → copy the option's form value and insert it after
-    • Live footer (proof-footer.js)      → a computed view of the form model per option
-    • Save PDF (window.print + @page)    → same approach as the MCS; @page size is
-                                           injected per footer because it's dynamic
+    • Pages: select / add / duplicate / delete / reorder (proof-page.js) → options array + selectedIndex
+    • Images per option (proof-page.js)   → an images array on each option
+    • PSD/PNG/JPG import + checks (psd-import.js, ag-psd) → an import service
+    • Fit-to-page scaling (fitImages)     → a helper run after layout
+    • Option form (bindery-proofing.js)   → FormArray per section; comboboxes; chips; toggles
+    • Drag & drop reorder (sortable.js)   → Angular CDK drag-drop
+    • Saved Mgmt Group / Property names   → localStorage via saved-suggestions.js
+    • Save PDF (window.print, @page 17in 11in) → same approach as the MCS
+    • Folder link (folder-link.js, File System Access API, Chrome/Edge only; not remembered)
+                                          → a folder service; images re-found by file name on reload
+    • Page flags (flagsOf in proof-page.js) → derived from each image's modified vs. saved date
 
   Data (sheet-data.js) → becomes a real API/service:
-    Google Sheet tabs: materials, binding_types, features, bookcloth.
+    Google Sheet tabs: materials, binding_types, features, bookcloth, Sizes.
     Falls back to the CSV snapshots in data/ if the sheet can't be reached.
   ════════════════════════════════════════════════════════════════
   -->
