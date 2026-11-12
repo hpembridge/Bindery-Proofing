@@ -104,7 +104,7 @@
           heightIn: img.naturalHeight / ppi,
           ppi,
           colorMode: 'RGB',
-          warnings: m ? [] : ['PNG/JPG size assumed at ' + DEFAULT_PPI + ' ppi. If it’s different, add the resolution to the file name (cover@150.png).'],
+          warnings: [],   // 300 ppi is assumed without a note; @150 etc. in the name overrides it
         });
       };
       img.onerror = () => reject(new Error(file.name + ' couldn’t be opened as an image.'));

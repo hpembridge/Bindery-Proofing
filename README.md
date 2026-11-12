@@ -38,7 +38,7 @@ This isn't a Platinum tool, so it doesn't use the PL-shared design tokens or sid
 | 16/32-bit PSD | Added, with a note that it's shown at 8-bit. |
 | PSD saved without **Maximize Compatibility** | Not added. The file has no flattened preview, and a message says to re-save it with that option on or to export a PNG. |
 | CMYK, Lab, Duotone or Multichannel PSD | Not added. The color mode is read from the PSD's header, and a message says to save an RGB copy or export a PNG. Browsers can't show these colors accurately. |
-| PNG / JPG | Added. Browsers can't read their resolution, so 300 ppi is assumed. If it's different, put the resolution in the file name, e.g. `cover@150.png`. |
+| PNG / JPG | Added. Browsers can't read their resolution, so 300 ppi is assumed (no message). If it's different, put the resolution in the file name, e.g. `cover@150.png`. |
 
 Images are kept only until the page is reloaded. A [linked folder](#linking-the-proofs-folder) can bring them back.
 
