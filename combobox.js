@@ -46,6 +46,9 @@
       const input = el.querySelector('.combobox__input');
       const list = el.querySelector('.combobox__listbox');
       list.id = 'cb-list-' + (++uid);
+      // Chrome makes scrolling boxes Tab stops; keep the list out of the Tab
+      // order so Tab goes to the next field, not into the (closing) list
+      list.tabIndex = -1;
       input.setAttribute('aria-controls', list.id);
     },
 

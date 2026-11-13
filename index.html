@@ -111,6 +111,11 @@
 
       <div class="canvas__toolbar">
         <span class="canvas__page-name" id="canvas-page-name">Option 1</span>
+        <!-- PageOrientation: this option's page is 17 x 11 (landscape) or 11 x 17 (portrait) -->
+        <div class="segmented canvas__orientation" role="group" aria-label="Page orientation">
+          <button type="button" class="segmented__btn" data-orientation="landscape" aria-pressed="true">17 × 11</button>
+          <button type="button" class="segmented__btn" data-orientation="portrait" aria-pressed="false">11 × 17</button>
+        </div>
         <button type="button" class="button-secondary" data-action="edit-option">
           <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit option
         </button>
@@ -160,17 +165,8 @@
             <p class="state-embed" data-state-embed></p>
 
             <footer class="proof-footer" id="proof-footer">
-              <div class="proof-footer__sections" id="proof-footer-sections">
-                <section class="proof-footer__section" data-f-section="material">
-                  <h3 class="proof-footer__label">Material</h3>
-                  <ul class="proof-footer__list" data-f-list></ul>
-                </section>
-                <section class="proof-footer__section" data-f-section="inserts">
-                  <h3 class="proof-footer__label">Inserts</h3>
-                  <ul class="proof-footer__list" data-f-list></ul>
-                </section>
-                <!-- one #tpl-footer-type-section per feature type (Decoration, Feature…) goes here -->
-              </div>
+              <!-- One #tpl-footer-box per image (Exterior, Interior…) that has specs -->
+              <div class="proof-footer__boxes" id="proof-footer-boxes"></div>
 
               <!-- Edit (screen only): opens this option's form -->
               <button type="button" class="proof-footer__edit" data-action="edit-option">
@@ -192,65 +188,97 @@
     <!-- ════════════ /Canvas ════════════ -->
 
 
-    <!-- ════════════ EditDrawer — the selected option's form ════════════ -->
+    <!-- ════════════ EditDrawer — the selected option's specs (right side, so the page stays in view) ════════════ -->
     <aside class="edit-drawer" id="edit-drawer" aria-labelledby="edit-drawer-title" hidden>
-      <div class="edit-drawer__header">
+      <header class="edit-drawer__header">
         <h2 class="edit-drawer__title" id="edit-drawer-title">Edit Option 1</h2>
         <button type="button" class="icon-btn" data-action="close-drawer" aria-label="Close editor">
           <i class="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
-      </div>
+      </header>
 
       <!-- All option forms live here; only the selected one is shown -->
-      <div class="option-list" id="option-list">
+      <div class="edit-drawer__body option-list" id="option-list">
 
       <!-- ──────── OptionCard (Option 1 — same structure as #tpl-option-card) ──────── -->
       <section class="option-card" data-option>
-        <header class="option-card__header">
-          <h2 class="option-card__title" data-option-title>Option 1</h2>
-          <div class="option-card__actions">
-            <button type="button" class="option-card__action" data-action="duplicate-option" aria-label="Duplicate Option 1" title="Duplicate">
-              <i class="fa-solid fa-copy" aria-hidden="true"></i>
-            </button>
-            <button type="button" class="option-card__action option-card__delete" data-action="remove-option" aria-label="Delete Option 1" title="Delete">
-              <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
-            </button>
+        <!-- MaterialTable: Type | Name | Location | Function (Location narrows the Function suggestions) -->
+        <section class="spec-table" aria-label="Material">
+          <h3 class="spec-table__title">Material</h3>
+          <table class="spec-table__grid spec-table__grid--material">
+            <thead>
+              <tr>
+                <th class="spec-table__grip-col" scope="col"><span class="visually-hidden">Reorder</span></th>
+                <th scope="col">Type</th>
+                <th scope="col">Name</th>
+                <th scope="col">Location</th>
+                <th scope="col">Function</th>
+              </tr>
+            </thead>
+            <!-- one #tpl-material-row per material; the last row is always empty -->
+            <tbody data-rows="material" data-sortable></tbody>
+          </table>
+        </section>
+
+        <!-- InsertsTable: Binding Type | Size | one count per image -->
+        <section class="spec-table" aria-label="Inserts">
+          <div class="spec-table__head">
+            <h3 class="spec-table__title">Inserts</h3>
+            <!-- AddLocation: locations that don't usually hold inserts (location_labels → holds_inserts)
+                 aren't columns until you add them here. Hidden when there are none to add. -->
+            <label class="spec-table__add-location" data-add-location hidden>
+              <span class="visually-hidden">Add a location column</span>
+              <select class="spec-table__add-location-select">
+                <option value="">+ Add location</option>
+                <!-- one #tpl-add-location-option per hidden location -->
+              </select>
+            </label>
           </div>
-        </header>
+          <table class="spec-table__grid" data-count-table>
+            <thead>
+              <tr>
+                <th class="spec-table__grip-col" scope="col"><span class="visually-hidden">Reorder</span></th>
+                <th class="spec-table__binding-col" scope="col">Binding Type</th>
+                <th scope="col" data-counts-anchor>Size</th>
+                <!-- #tpl-count-head per image goes here -->
+              </tr>
+            </thead>
+            <tbody data-rows="insert" data-sortable></tbody>
+          </table>
+        </section>
 
-        <div class="option-card__body">
-          <!-- Each section starts with no rows; "Add …" clones the row templates below -->
+        <!-- DecorationTable: Name | one count per image -->
+        <section class="spec-table" aria-label="Decoration">
+          <h3 class="spec-table__title">Decoration</h3>
+          <table class="spec-table__grid" data-count-table>
+            <thead>
+              <tr>
+                <th class="spec-table__grip-col" scope="col"><span class="visually-hidden">Reorder</span></th>
+                <th scope="col" data-counts-anchor>Name</th>
+              </tr>
+            </thead>
+            <tbody data-rows="decoration" data-sortable></tbody>
+          </table>
+        </section>
 
-          <!-- BindingTypesSection -->
-          <fieldset class="option-section">
-            <legend class="option-section__title">Binding Types</legend>
-            <div class="option-section__rows" data-rows="binding" data-sortable></div>
-            <button type="button" class="add-btn" data-action="add-row" data-row-type="binding">
-              <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Binding Type
-            </button>
-          </fieldset>
-
-          <!-- MaterialsSection -->
-          <fieldset class="option-section">
-            <legend class="option-section__title">Materials</legend>
-            <div class="option-section__rows" data-rows="material" data-sortable></div>
-            <button type="button" class="add-btn" data-action="add-row" data-row-type="material">
-              <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Material
-            </button>
-          </fieldset>
-
-          <!-- FeaturesSection -->
-          <fieldset class="option-section">
-            <legend class="option-section__title">Features</legend>
-            <!-- FeatureToggles — one toggle per feature, grouped by Type (filled from the sheet) -->
-            <div class="feature-toggles" data-feature-toggles></div>
-          </fieldset>
-
-        </div>
+        <!-- OtherTable: Name | one count per image -->
+        <section class="spec-table" aria-label="Other">
+          <h3 class="spec-table__title">Other</h3>
+          <table class="spec-table__grid" data-count-table>
+            <thead>
+              <tr>
+                <th class="spec-table__grip-col" scope="col"><span class="visually-hidden">Reorder</span></th>
+                <th scope="col" data-counts-anchor>Name</th>
+              </tr>
+            </thead>
+            <tbody data-rows="other" data-sortable></tbody>
+          </table>
+        </section>
       </section>
       <!-- ──────── /OptionCard ──────── -->
 
       </div>
+
     </aside>
     <!-- ════════════ /EditDrawer ════════════ -->
 
@@ -315,129 +343,131 @@
        becomes a component (Combobox) or the body of an @for block.
        ════════════════════════════════════════════════════════════ -->
 
-  <!-- BindingRow -->
-  <template id="tpl-binding">
-    <div class="spec-row binding-row" data-row data-sortable-item>
-      <!-- DragHandle (sortable.js) -->
-      <button type="button" class="drag-handle" data-drag-handle aria-label="Drag to reorder binding type">
-        <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
-      </button>
-      <!-- Combobox -->
-      <div class="combobox binding-row__type" data-combobox data-source="bindingTypes">
-        <input class="field combobox__input" name="bindingType" type="text" placeholder="Binding Type" aria-label="Binding type"
-          role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
-        <ul class="combobox__listbox" role="listbox" hidden></ul>
-      </div>
-      <!-- /Combobox -->
-      <span class="spec-row__text" data-holds>holds</span>
-      <!-- Insert count: any text, with "Variable" offered as a suggestion -->
-      <div class="combobox binding-row__count" data-combobox data-freeform data-source="insertCount">
-        <input class="field combobox__input" name="insertCount" type="text" placeholder="Insert Count" aria-label="Insert count"
-          role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
-        <ul class="combobox__listbox" role="listbox" hidden></ul>
-      </div>
-      <!-- SizeChipInput — type or pick a size, Enter adds it as a chip (any valid W x H, not just the list) -->
-      <div class="binding-row__sizes">
-        <div class="field chip-input" data-chip-input data-sortable data-axis="x">
-          <!-- chips (#tpl-size-chip) are inserted here, before the combobox -->
-          <div class="combobox chip-input__combobox" data-combobox data-freeform data-source="sizes">
-            <input class="combobox__input chip-input__input" name="insertSize" type="text" placeholder="Insert Size" aria-label="Insert sizes"
-              role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
-            <ul class="combobox__listbox" role="listbox" hidden></ul>
-          </div>
-        </div>
-        <p class="field-error" data-size-error hidden>Enter a size like 8.5 x 11 or 8.5 x 11 folded.</p>
-        <p class="field-warning" data-size-warning hidden>
-          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-          <span data-size-warning-text></span>
-        </p>
-      </div>
-      <!-- /SizeChipInput -->
-      <span class="spec-row__text" data-inserts>inserts</span>
-      <button type="button" class="row-remove" data-action="remove-row" aria-label="Remove binding type">
-        <i class="fa-solid fa-minus" aria-hidden="true"></i>
-      </button>
-    </div>
-  </template>
-
   <!-- MaterialRow -->
-  <template id="tpl-material">
-    <div class="spec-row material-row" data-row data-sortable-item>
-      <div class="material-row__main">
+  <template id="tpl-material-row">
+    <tr class="spec-row material-row" data-row="material">
+      <td class="spec-cell spec-cell--grip">
+        <!-- DragHandle (sortable.js); hidden on the empty last row -->
         <button type="button" class="drag-handle" data-drag-handle aria-label="Drag to reorder material">
           <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
         </button>
-        <div class="combobox material-row__material" data-combobox data-source="materials">
-          <input class="field combobox__input" name="material" type="text" placeholder="Material" aria-label="Material"
+      </td>
+      <td class="spec-cell">
+        <div class="combobox material-row__type" data-combobox data-source="materials">
+          <input class="field spec-field combobox__input" type="text" placeholder="Type" aria-label="Material type"
             role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
           <ul class="combobox__listbox" role="listbox" hidden></ul>
         </div>
-        <!-- MaterialDetail — shown only when the material has a Detail List (e.g. Bookcloth) -->
-        <div class="material-row__detail" hidden>
-          <label class="visually-hidden" data-detail-label>Bookcloth</label>
-          <div class="combobox" data-combobox data-source="detail">
-            <input class="field combobox__input material-row__detail-input" name="materialDetail" type="text" placeholder="Search by name or swatch #"
-              role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
-            <ul class="combobox__listbox" role="listbox" hidden></ul>
-          </div>
-          <!-- Typed something that isn't on the list: allowed (it prints as typed), with a warning -->
-          <p class="field-warning" data-detail-warning hidden>
-            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-            <span data-detail-warning-text></span>
-          </p>
+      </td>
+      <td class="spec-cell">
+        <!-- Name: searches the type's Detail List (Bookcloth, Rockboard), free text otherwise -->
+        <div class="combobox material-row__name" data-combobox data-freeform data-source="detail">
+          <input class="field spec-field combobox__input" type="text" placeholder="Name" aria-label="Material name"
+            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+          <ul class="combobox__listbox" role="listbox" hidden></ul>
         </div>
-        <!-- Function suggestions = functions the chosen material is eligible for -->
+        <p class="field-warning spec-cell__message" data-name-warning hidden>
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <span data-name-warning-text></span>
+        </p>
+      </td>
+      <td class="spec-cell">
+        <!-- Location: which image (and footer box) it's on; narrows Function (functions_labels tab).
+             Filled in when the page has only one image. -->
+        <div class="combobox material-row__location" data-combobox data-source="locations">
+          <input class="field spec-field combobox__input" type="text" placeholder="Location" aria-label="Location"
+            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+          <ul class="combobox__listbox" role="listbox" hidden></ul>
+        </div>
+      </td>
+      <td class="spec-cell">
+        <!-- Function: the Type's functions that go on this Location -->
         <div class="combobox material-row__function" data-combobox data-source="functions">
-          <input class="field combobox__input" name="function" type="text" placeholder="Function" aria-label="Function"
+          <input class="field spec-field combobox__input" type="text" placeholder="Function" aria-label="Function"
             role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" disabled />
           <ul class="combobox__listbox" role="listbox" hidden></ul>
         </div>
-        <button type="button" class="row-remove" data-action="remove-row" aria-label="Remove material">
-          <i class="fa-solid fa-minus" aria-hidden="true"></i>
+      </td>
+    </tr>
+  </template>
+
+  <!-- InsertRow -->
+  <template id="tpl-insert-row">
+    <tr class="spec-row insert-row" data-row="insert">
+      <td class="spec-cell spec-cell--grip">
+        <button type="button" class="drag-handle" data-drag-handle aria-label="Drag to reorder insert">
+          <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
         </button>
+      </td>
+      <!-- Binding Type first: it narrows the Size suggestions (standard / folded) -->
+      <td class="spec-cell">
+        <div class="combobox insert-row__binding" data-combobox data-source="bindingTypes">
+          <input class="field spec-field combobox__input" type="text" placeholder="Type" aria-label="Binding type"
+            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+          <ul class="combobox__listbox" role="listbox" hidden></ul>
+        </div>
+      </td>
+      <td class="spec-cell" data-counts-anchor>
+        <!-- Size: pick or type any W x H; checked and formatted when you leave it -->
+        <div class="combobox insert-row__size" data-combobox data-freeform data-source="sizes">
+          <input class="field spec-field combobox__input" type="text" placeholder="Size" aria-label="Insert size"
+            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+          <ul class="combobox__listbox" role="listbox" hidden></ul>
+        </div>
+        <p class="field-error spec-cell__message" data-size-error hidden>Enter a size like 8.5 x 11 or 8.5 x 11 folded.</p>
+        <p class="field-warning spec-cell__message" data-size-warning hidden>
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <span data-size-warning-text></span>
+        </p>
+      </td>
+      <!-- #tpl-count-cell per image goes here -->
+    </tr>
+  </template>
+
+  <!-- FeatureRow (Decoration and Other tables; JS sets the suggestions + placeholder) -->
+  <template id="tpl-feature-row">
+    <tr class="spec-row feature-row" data-row="decoration">
+      <td class="spec-cell spec-cell--grip">
+        <button type="button" class="drag-handle" data-drag-handle aria-label="Drag to reorder">
+          <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
+        </button>
+      </td>
+      <td class="spec-cell" data-counts-anchor>
+        <!-- Any name; the sheet's list is a suggestion -->
+        <div class="combobox feature-row__name" data-combobox data-freeform data-source="decorations">
+          <input class="field spec-field combobox__input" type="text" placeholder="Decoration" aria-label="Decoration"
+            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+          <ul class="combobox__listbox" role="listbox" hidden></ul>
+        </div>
+      </td>
+      <!-- #tpl-count-cell per image goes here -->
+    </tr>
+  </template>
+
+  <!-- AddLocationOption (Inserts → "+ Add location") -->
+  <template id="tpl-add-location-option">
+    <option value="Exterior">Exterior</option>
+  </template>
+
+  <!-- CountHead / CountCell: one per image label (bindery-proofing.js).
+       Inserts use #tpl-insert-count-cell: same, plus a "Multiple" suggestion. -->
+  <template id="tpl-count-head">
+    <th class="spec-table__count-head" scope="col" data-count-head>Exterior</th>
+  </template>
+  <template id="tpl-count-cell">
+    <td class="spec-cell spec-cell--count" data-count-col>
+      <input class="field spec-field spec-count" type="text" inputmode="numeric" placeholder="0" aria-label="Exterior count" />
+    </td>
+  </template>
+  <template id="tpl-insert-count-cell">
+    <td class="spec-cell spec-cell--count" data-count-col>
+      <!-- Number, or "Multiple" (suggested when the binding type's "variable" column has an x) -->
+      <div class="combobox" data-combobox data-freeform data-source="insertCount">
+        <input class="field spec-field spec-count combobox__input" type="text" inputmode="numeric" placeholder="0" aria-label="Exterior count"
+          role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+        <ul class="combobox__listbox" role="listbox" hidden></ul>
       </div>
-    </div>
-  </template>
-
-  <!-- FeatureToggleGroup (one per Type: Decorations, Features) -->
-  <template id="tpl-feature-group">
-    <div class="feature-toggles__group" role="group" aria-label="Decorations" data-type="Decoration">
-      <span class="feature-toggles__label">Decorations</span>
-      <div class="feature-toggles__buttons"></div>
-      <!-- CustomFeature — adds a toggle of this type to this option only; switching it off removes it -->
-      <div class="custom-feature">
-        <input class="field custom-feature__input" type="text" placeholder="Custom decoration" aria-label="Custom decoration" />
-        <button type="button" class="add-btn" data-action="save-custom-feature">Save</button>
-      </div>
-    </div>
-  </template>
-
-  <!-- FeatureToggle -->
-  <template id="tpl-feature-toggle">
-    <button type="button" class="toggle-btn" data-feature aria-pressed="false">
-      <i class="fa-solid fa-check toggle-btn__check" aria-hidden="true"></i>
-      <span class="toggle-btn__label">Deboss</span>
-    </button>
-  </template>
-
-  <!-- SizeChip -->
-  <template id="tpl-size-chip">
-    <span class="chip" data-chip data-sortable-item>
-      <button type="button" class="drag-handle chip__handle" data-drag-handle aria-label="Drag to reorder size" tabindex="-1">
-        <i class="fa-solid fa-grip-vertical" aria-hidden="true"></i>
-      </button>
-      <i class="fa-solid fa-triangle-exclamation chip__warning-icon" aria-hidden="true"></i>
-      <!-- Count and size are editable in place: click, type, Enter (Esc cancels).
-           tabindex -1 keeps them out of the Count → Size tab order. Parens come from CSS. -->
-      <span class="chip__count" contenteditable="plaintext-only" spellcheck="false" tabindex="-1"
-        role="textbox" aria-label="Insert count">2</span>
-      <span class="chip__label" contenteditable="plaintext-only" spellcheck="false" tabindex="-1"
-        role="textbox" aria-label="Insert size">8.5 x 11</span>
-      <!-- tabindex -1: Tab goes Count → Size without stopping on chips; Backspace removes the last chip -->
-      <button type="button" class="chip__remove" data-action="remove-chip" aria-label="Remove (2) 8.5 x 11" tabindex="-1">
-        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-      </button>
-    </span>
+    </td>
   </template>
 
   <!-- Combobox suggestion parts (filled from the sheet data) -->
@@ -492,7 +522,16 @@
   <!-- ProofImage (art area): label, image, "Shown at X%"; controls are screen only -->
   <template id="tpl-proof-image">
     <figure class="proof-image" data-sortable-item>
-      <figcaption class="proof-image__label" contenteditable="plaintext-only" spellcheck="false">Cover</figcaption>
+      <!-- Label: type or pick (suggestions = functions_labels headers). The input is for
+           screen; the text copy is what prints. Renaming it renames its count column. -->
+      <figcaption class="proof-image__label">
+        <div class="combobox proof-image__label-combobox" data-combobox data-freeform data-source="imageLabels">
+          <input class="combobox__input proof-image__label-input" type="text" aria-label="Image label" spellcheck="false"
+            role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" />
+          <ul class="combobox__listbox" role="listbox" hidden></ul>
+        </div>
+        <span class="proof-image__label-text">Cover</span>
+      </figcaption>
       <div class="proof-image__frame">
         <img class="proof-image__img" alt="" />
         <span class="proof-image__controls">
@@ -511,16 +550,25 @@
     </figure>
   </template>
 
-  <!-- FooterTypeSection: label = the feature type from the sheet -->
-  <template id="tpl-footer-type-section">
-    <section class="proof-footer__section" data-f-section="type">
-      <h3 class="proof-footer__label">Decoration</h3>
+  <!-- FooterBox: one per image (EXTERIOR, INTERIOR…), holding up to four sections -->
+  <template id="tpl-footer-box">
+    <section class="proof-footer__box">
+      <h3 class="proof-footer__box-label">Exterior</h3>
+      <div class="proof-footer__box-grid"></div>
+    </section>
+  </template>
+
+  <!-- FooterSection: Material / Inserts / Decoration / Other -->
+  <template id="tpl-footer-section">
+    <section class="proof-footer__section">
+      <h4 class="proof-footer__label">Material</h4>
       <ul class="proof-footer__list" data-f-list></ul>
     </section>
   </template>
 
+  <!-- FooterItem. Modifiers: --heading ("Menu Cord holds:"), --sub (the sizes under it) -->
   <template id="tpl-footer-item">
-    <li class="proof-footer__item">Blind debossed logo</li>
+    <li class="proof-footer__item">Full Wrap: Majilite (#1)</li>
   </template>
 
   <!-- Notice (import problems) -->
@@ -548,39 +596,80 @@
 
   <!-- OptionCard -->
   <template id="tpl-option-card">
-    <section class="option-card" data-option>
-      <header class="option-card__header">
-        <h2 class="option-card__title" data-option-title>Option</h2>
-        <div class="option-card__actions">
-          <button type="button" class="option-card__action" data-action="duplicate-option" aria-label="Duplicate option" title="Duplicate">
-            <i class="fa-solid fa-copy" aria-hidden="true"></i>
-          </button>
-          <button type="button" class="option-card__action option-card__delete" data-action="remove-option" aria-label="Delete option" title="Delete">
-            <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
-          </button>
-        </div>
-      </header>
-      <div class="option-card__body">
-        <fieldset class="option-section">
-          <legend class="option-section__title">Binding Types</legend>
-          <div class="option-section__rows" data-rows="binding" data-sortable></div>
-          <button type="button" class="add-btn" data-action="add-row" data-row-type="binding">
-            <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Binding Type
-          </button>
-        </fieldset>
-        <fieldset class="option-section">
-          <legend class="option-section__title">Materials</legend>
-          <div class="option-section__rows" data-rows="material" data-sortable></div>
-          <button type="button" class="add-btn" data-action="add-row" data-row-type="material">
-            <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Material
-          </button>
-        </fieldset>
-        <fieldset class="option-section">
-          <legend class="option-section__title">Features</legend>
-          <div class="feature-toggles" data-feature-toggles></div>
-        </fieldset>
-      </div>
-    </section>
+      <section class="option-card" data-option>
+        <!-- MaterialTable: Type | Name | Location | Function (Location narrows the Function suggestions) -->
+        <section class="spec-table" aria-label="Material">
+          <h3 class="spec-table__title">Material</h3>
+          <table class="spec-table__grid spec-table__grid--material">
+            <thead>
+              <tr>
+                <th class="spec-table__grip-col" scope="col"><span class="visually-hidden">Reorder</span></th>
+                <th scope="col">Type</th>
+                <th scope="col">Name</th>
+                <th scope="col">Location</th>
+                <th scope="col">Function</th>
+              </tr>
+            </thead>
+            <!-- one #tpl-material-row per material; the last row is always empty -->
+            <tbody data-rows="material" data-sortable></tbody>
+          </table>
+        </section>
+
+        <!-- InsertsTable: Binding Type | Size | one count per image -->
+        <section class="spec-table" aria-label="Inserts">
+          <div class="spec-table__head">
+            <h3 class="spec-table__title">Inserts</h3>
+            <!-- AddLocation: locations that don't usually hold inserts (location_labels → holds_inserts)
+                 aren't columns until you add them here. Hidden when there are none to add. -->
+            <label class="spec-table__add-location" data-add-location hidden>
+              <span class="visually-hidden">Add a location column</span>
+              <select class="spec-table__add-location-select">
+                <option value="">+ Add location</option>
+                <!-- one #tpl-add-location-option per hidden location -->
+              </select>
+            </label>
+          </div>
+          <table class="spec-table__grid" data-count-table>
+            <thead>
+              <tr>
+                <th class="spec-table__grip-col" scope="col"><span class="visually-hidden">Reorder</span></th>
+                <th class="spec-table__binding-col" scope="col">Binding Type</th>
+                <th scope="col" data-counts-anchor>Size</th>
+                <!-- #tpl-count-head per image goes here -->
+              </tr>
+            </thead>
+            <tbody data-rows="insert" data-sortable></tbody>
+          </table>
+        </section>
+
+        <!-- DecorationTable: Name | one count per image -->
+        <section class="spec-table" aria-label="Decoration">
+          <h3 class="spec-table__title">Decoration</h3>
+          <table class="spec-table__grid" data-count-table>
+            <thead>
+              <tr>
+                <th class="spec-table__grip-col" scope="col"><span class="visually-hidden">Reorder</span></th>
+                <th scope="col" data-counts-anchor>Name</th>
+              </tr>
+            </thead>
+            <tbody data-rows="decoration" data-sortable></tbody>
+          </table>
+        </section>
+
+        <!-- OtherTable: Name | one count per image -->
+        <section class="spec-table" aria-label="Other">
+          <h3 class="spec-table__title">Other</h3>
+          <table class="spec-table__grid" data-count-table>
+            <thead>
+              <tr>
+                <th class="spec-table__grip-col" scope="col"><span class="visually-hidden">Reorder</span></th>
+                <th scope="col" data-counts-anchor>Name</th>
+              </tr>
+            </thead>
+            <tbody data-rows="other" data-sortable></tbody>
+          </table>
+        </section>
+      </section>
   </template>
 
 
@@ -609,31 +698,40 @@
     FolderLink        → div.folder-link (inside JobDetails; states via data-state) → .folder-link, .button-secondary
     SettingsDialog    → dialog#settings-dialog + #tpl-saved-item → .settings-dialog, .saved-list
     PagesPanel        → nav.pages-panel + #tpl-page-item (incl. PageFlags: art changed / not in folder) → .pages-panel, .page-item
-    Canvas            → main.canvas (toolbar: page name, Edit option, Add images; notices; stage) → .canvas, .notices
-    ProofPage         → article.proof-page (17 x 11 in; this is the PDF) → .proof-page
+    Canvas            → main.canvas (toolbar: page name, orientation, Edit option, Add images; notices; stage) → .canvas, .notices
+    ProofPage         → article.proof-page (17 x 11 in, or 11 x 17 with data-orientation="portrait"; this is the PDF) → .proof-page
     ProofHeader       → header.proof-header (running header: job info) → .proof-header
-    ProofImage        → #tpl-proof-image             → .proof-image
-    ProofFooter       → footer.proof-footer + #tpl-footer-type-section / #tpl-footer-item → .proof-footer
-    EditDrawer        → aside.edit-drawer            → .edit-drawer (holds every OptionCard)
-    OptionCard        → section.option-card / #tpl-option-card → .option-card
-    BindingRow / MaterialRow / FeatureToggles / CustomFeature / SizeChipInput / Combobox / DragHandle
-                      → row + chip templates below   → their own sections in the CSS
+    ProofImage        → #tpl-proof-image (label = combobox on screen, text in print) → .proof-image
+    ProofFooter       → footer.proof-footer + #tpl-footer-box / #tpl-footer-section / #tpl-footer-item → .proof-footer
+    EditDrawer        → aside#edit-drawer (holds every OptionCard; only the selected one shows) → .edit-drawer
+    OptionCard        → section.option-card / #tpl-option-card (four SpecTables) → .option-card
+    SpecTable         → section.spec-table > table.spec-table__grid → .spec-table, .spec-cell
+    MaterialRow / InsertRow / FeatureRow / CountHead / CountCell / Combobox / DragHandle
+                      → templates below              → their own sections in the CSS
 
   Simulated in JS → Angular state/events:
     • Pages: select / add / duplicate / delete / reorder (proof-page.js) → options array + selectedIndex
     • Images per option (proof-page.js)   → an images array on each option
+    • Spec tables (bindery-proofing.js)   → a FormArray per table:
+        – always one empty row at the bottom; typing in it adds another; a row
+          cleared of every value is removed when focus leaves it
+        – count columns = the option's image labels (columnsOf / renderColumns);
+          Inserts shows only the ones that hold inserts (columnsFor) + "+ Add location"
+        – Location narrows Function (functions_labels tab); one image → Location filled in; one column → Decoration/Other count 1 filled in
+    • Footer boxes (BP.footerFor → renderFooter) → a pure function of the option
     • PSD/PNG/JPG import + checks (psd-import.js, ag-psd) → an import service
     • Fit-to-page scaling (fitImages)     → a helper run after layout
-    • Option form (bindery-proofing.js)   → FormArray per section; comboboxes; chips; toggles
     • Drag & drop reorder (sortable.js)   → Angular CDK drag-drop
     • Saved Mgmt Group / Property names   → localStorage via saved-suggestions.js
-    • Save PDF (window.print, @page 17in 11in) → same approach as the MCS
+    • Save PDF (window.print, @page 17in 11in; named @page portrait for 11 x 17 pages) → same approach as the MCS
+    • Page orientation per option (data-orientation on the option card) → an orientation field on each option
     • Folder link (folder-link.js, File System Access API, Chrome/Edge only; not remembered)
                                           → a folder service; images re-found by file name on reload
     • Page flags (flagsOf in proof-page.js) → derived from each image's modified vs. saved date
 
   Data (sheet-data.js) → becomes a real API/service:
-    Google Sheet tabs: materials, binding_types, features, bookcloth, Sizes.
+    Google Sheet tabs: materials, functions_labels, location_labels, binding_types, features, sizes,
+    plus each Detail List tab named in materials (Bookcloth, Rockboard).
     Falls back to the CSV snapshots in data/ if the sheet can't be reached.
   ════════════════════════════════════════════════════════════════
   -->

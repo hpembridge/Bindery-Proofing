@@ -5,7 +5,8 @@
 //   • takes dropped PSD/PNG/JPG files (psd-import.js) and scales them together
 //     to fit the art area, labeling each "Shown at X%"
 //   • fills the footer live from the job fields and the option's form
-//   • opens the option's form in the Edit drawer
+//   • opens the option's spec tables in the Edit drawer (the page stays in view)
+//   • keeps each option's count columns in step with its image labels
 //   • saves the page as a 17 x 11 PDF (window.print, like the MCS)
 //   • links the proof's art folder (folder-link.js) so images can be found
 //     again by file name after a reload, and flags options whose art changed
@@ -18,8 +19,9 @@
   'use strict';
 
   const PX_PER_IN = 96;
-  const PAGE_W_IN = 17;
-  const PAGE_H_IN = 11;
+  // Page size in inches: 17 x 11, or 11 x 17 when an option is set to portrait
+  const PAGE_IN = { landscape: [17, 11], portrait: [11, 17] };
+  const orientationOf = card => (card && card.dataset.orientation) || 'landscape';
 
   const form = document.getElementById('proof-form');
   const optionList = document.getElementById('option-list');
@@ -29,7 +31,7 @@
   const page = document.getElementById('proof-page');
   const art = document.getElementById('proof-art');
   const empty = document.getElementById('proof-empty');
-  const footerSections = document.getElementById('proof-footer-sections');
+  const footerBoxes = document.getElementById('proof-footer-boxes');
   const header = document.getElementById('proof-header');
   const pageName = document.getElementById('canvas-page-name');
   const drawer = document.getElementById('edit-drawer');
@@ -66,53 +68,6 @@
     };
   }
 
-  function readOption(card) {
-    const data = window.BP.data();
-
-    // Material: "Front: Majilite (#50)" (bookcloth) or "Back: Wood"
-    const material = [...card.querySelectorAll('.material-row')].map(row => {
-      const mat = val(row, '.material-row__material input');
-      if (!mat) return '';
-      const fn = val(row, '.material-row__function input');
-      const detailWrap = row.querySelector('.material-row__detail');
-      let detail = '';
-      if (!detailWrap.hidden) {
-        const picked = val(detailWrap, 'input');
-        const names = data && data.customerNames[detailWrap.dataset.list];
-        detail = (names && names[picked]) || picked;
-      }
-      const what = detail || mat;
-      return fn ? fn + ': ' + what : what;
-    }).filter(Boolean);
-
-    // Inserts: "Corners hold (2) 8.5 x 11, (4) 5.5 x 8.5 inserts"
-    const inserts = [...card.querySelectorAll('.binding-row')].map(row => {
-      const type = val(row, '.binding-row__type input');
-      const chips = [...row.querySelectorAll('[data-chip]')];
-      const sizes = chips.map(c => (c.dataset.count ? '(' + c.dataset.count + ') ' : '') + c.dataset.size);
-      const pending = val(row, '.binding-row__count input');
-      const holds = /s$/i.test(type) ? 'hold' : 'holds';
-      const counts = sizes.length ? chips.map(c => c.dataset.count) : [pending];
-      const noun = counts.length === 1 && Number(counts[0]) === 1 ? 'insert' : 'inserts';
-      const listed = sizes.length ? sizes.join(', ') : pending;
-      const what = listed ? listed + ' ' + noun : '';
-      if (!type) return what;
-      return what ? type + ' ' + holds + ' ' + what : type;
-    }).filter(Boolean);
-
-    // Selected toggles grouped by feature type, in the sheet's order
-    // (type comes from the toggle's group, so custom toggles land in the right column)
-    const pressed = [...card.querySelectorAll('.toggle-btn[aria-pressed="true"]')].map(b => ({
-      name: b.dataset.feature,
-      type: b.closest('.feature-toggles__group').dataset.type,
-    }));
-    const types = data ? [...new Set(data.features.map(f => f.type))] : [];
-    const byType = types.map(type => ({ type, items: pressed.filter(p => p.type === type).map(p => p.name) }));
-
-    return { material, inserts, byType };
-  }
-
-
   // ══ Pages panel ══════════════════════════════════════════════════
 
   function renderPages() {
@@ -122,6 +77,7 @@
       item.dataset.index = i;
       item.querySelector('.page-item__name').textContent = name;
       item.querySelector('[data-action="page-select"]').setAttribute('aria-current', String(card === selected));
+      item.dataset.orientation = orientationOf(card);   // tall thumbnail for 11 x 17
       item.classList.toggle('is-selected', card === selected);
       item.querySelector('[data-action="page-duplicate"]').setAttribute('aria-label', 'Duplicate ' + name);
       const del = item.querySelector('[data-action="page-remove"]');
@@ -134,6 +90,9 @@
         'Art changed since the proof was saved: ' + flags.changed.join(', ') + '. The specs may need edits.');
       setFlag(item.querySelector('[data-flag="missing"]'), flags.missing,
         'Not in the linked folder: ' + flags.missing.join(', ') + '. This option may have been omitted.');
+
+      // Count columns in the option's tables follow its image labels
+      window.BP.setImageLabels(card, imagesOf(card).map(im => im.label));
 
       // Thumbnail: the page's first image
       const first = imagesOf(card)[0];
@@ -152,7 +111,7 @@
   function select(card) {
     if (!card) return;
     selected = card;
-    cards().forEach(c => { c.hidden = c !== selected; });   // drawer shows only this option
+    cards().forEach(c => { c.hidden = c !== selected; });   // the drawer shows only this option
     renderArt();
     render();
   }
@@ -160,13 +119,14 @@
   const cardFromItem = el => cards()[Number(el.closest('.page-item').dataset.index)];
 
 
-  // ══ Canvas: fit the 17 x 11 page into the window ═════════════════
+  // ══ Canvas: fit the page (17 x 11 or 11 x 17) into the window ════
 
   function fitStage() {
     const pad = 32;
+    const [w, h] = PAGE_IN[orientationOf(selected)];
     const scale = Math.min(
-      (stage.clientWidth - pad) / (PAGE_W_IN * PX_PER_IN),
-      (stage.clientHeight - pad) / (PAGE_H_IN * PX_PER_IN)
+      (stage.clientWidth - pad) / (w * PX_PER_IN),
+      (stage.clientHeight - pad) / (h * PX_PER_IN)
     );
     sizer.style.setProperty('--page-scale', Math.max(0.1, scale).toFixed(4));   // dynamic value
   }
@@ -179,7 +139,10 @@
     art.replaceChildren(...list.map(image => {
       const fig = tpl('tpl-proof-image');
       fig.dataset.id = image.id;
-      fig.querySelector('.proof-image__label').textContent = image.label;
+      const labelCombo = fig.querySelector('.proof-image__label-combobox');
+      window.Combobox.setup(labelCombo);
+      window.Combobox.setValue(labelCombo, image.label);
+      fig.querySelector('.proof-image__label-text').textContent = image.label;
       const img = fig.querySelector('.proof-image__img');
       img.src = image.url;
       img.alt = image.label;
@@ -310,22 +273,34 @@
 
   // ══ Footer ═══════════════════════════════════════════════════════
 
-  function fillList(section, items) {
-    const ul = section.querySelector('[data-f-list]');
-    ul.replaceChildren(...items.map(text => {
-      const li = tpl('tpl-footer-item');
-      li.textContent = text;
-      return li;
-    }));
-    ul.classList.toggle('proof-footer__list--bullets', items.length > 1);   // "- " only for 2+
-    section.hidden = !items.length;
+  // A list of footer items. Plain strings, or { heading, items } groups
+  // (Inserts: "Menu Cord holds:" with one line per size under it).
+  function fillList(ul, entries) {
+    const lis = [];
+    let lines = 0;
+    entries.forEach(entry => {
+      if (typeof entry === 'string') { lis.push(item(entry)); lines++; return; }
+      if (entry.heading) lis.push(item(entry.heading, 'proof-footer__item--heading'));
+      entry.items.forEach(text => lis.push(item(text, entry.heading ? 'proof-footer__item--sub' : '')));
+      lines += entry.heading ? 2 : entry.items.length;
+    });
+    ul.replaceChildren(...lis);
+    ul.classList.toggle('proof-footer__list--bullets', lines > 1);   // "- " only for 2+
   }
+
+  function item(text, modifier) {
+    const li = tpl('tpl-footer-item');
+    li.textContent = text;
+    if (modifier) li.classList.add(modifier);
+    return li;
+  }
+
+  const FOOTER_SECTIONS = [['material', 'Material'], ['inserts', 'Inserts'], ['decoration', 'Decoration'], ['other', 'Other']];
 
   function renderFooter() {
     const job = readJob();
     const all = cards();
     const index = all.indexOf(selected);
-    const opt = readOption(selected);
 
     // Running header (no labels)
     //   left:  "Mgmt Group / Property Name"  (Mgmt Group only if filled in)
@@ -338,18 +313,24 @@
     chip.textContent = 'Option ' + (index + 1);
     chip.hidden = all.length < 2;
 
-    ['material', 'inserts'].forEach(key =>
-      fillList(footerSections.querySelector('[data-f-section="' + key + '"]'), opt[key]));
-
-    // One section per feature type (Decoration, Feature…), labeled with the type
-    footerSections.querySelectorAll('[data-f-type]').forEach(s => s.remove());
-    opt.byType.forEach(({ type, items }) => {
-      const section = tpl('tpl-footer-type-section');
-      section.dataset.fType = type;
-      section.querySelector('.proof-footer__label').textContent = type;
-      fillList(section, items);
-      footerSections.appendChild(section);
-    });
+    // One box per image (EXTERIOR, INTERIOR…) with its Material / Inserts /
+    // Decoration / Other columns; empty columns and boxes are left out
+    footerBoxes.replaceChildren(...window.BP.footerFor(selected).map(box => {
+      const el = tpl('tpl-footer-box');
+      const label = el.querySelector('.proof-footer__box-label');
+      label.textContent = box.label;
+      label.hidden = !box.label;
+      const grid = el.querySelector('.proof-footer__box-grid');
+      FOOTER_SECTIONS.forEach(([key, title]) => {
+        if (!box[key].length) return;
+        const section = tpl('tpl-footer-section');
+        section.dataset.fSection = key;
+        section.querySelector('.proof-footer__label').textContent = title;
+        fillList(section.querySelector('[data-f-list]'), box[key]);
+        grid.appendChild(section);
+      });
+      return el;
+    }));
   }
 
 
@@ -360,9 +341,21 @@
     const name = 'Option ' + (index + 1);
     pageName.textContent = name;
     drawerTitle.textContent = 'Edit ' + name;
+    applyOrientation();
     renderPages();
     renderFooter();
     fitImages();   // footer height changes the art area
+  }
+
+  // The page takes the selected option's orientation; the toggle shows it
+  function applyOrientation() {
+    const orientation = orientationOf(selected);
+    form.querySelectorAll('.segmented__btn[data-orientation]').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.orientation === orientation)));
+    if (page.dataset.orientation === orientation) return;
+    page.dataset.orientation = orientation;
+    sizer.dataset.orientation = orientation;
+    fitStage();
   }
 
   // Hold re-renders while the pointer is down in the Pages panel so the
@@ -381,19 +374,20 @@
   }
 
 
-  // ══ Drawer ═══════════════════════════════════════════════════════
+  // ══ Edit drawer ══════════════════════════════════════════════════
+  // On the right, wide enough for a count column per image, so the page
+  // (and its footer) stays in view while you edit.
 
   function openDrawer() {
     drawer.hidden = false;
-    document.body.classList.add('has-drawer');
     fitStage();
-    const first = selected.querySelector('input:not([disabled]), button');
+    render();
+    const first = selected.querySelector('input:not([disabled])');
     if (first) first.focus({ preventScroll: true });
   }
 
   function closeDrawer() {
     drawer.hidden = true;
-    document.body.classList.remove('has-drawer');
     fitStage();
   }
 
@@ -445,7 +439,7 @@
   // can say which files to drop back in.
 
   const MARK = '%%BP%%';
-  const STATE_VERSION = 3;   // 2: images are { label, file } + folder name; 3: + modified date
+  const STATE_VERSION = 4;   // 2: images { label, file } + folder; 3: + modified date; 4: spec tables
 
   function captureState() {
     const job = readJob();
@@ -455,7 +449,6 @@
       d: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       job,
       theme: page.dataset.footerTheme,
-      custom: window.BP.serializeCustom(),
       options: window.BP.serializeOptions(),
       images: cards().map(card => imagesOf(card).map(i => ({ label: i.label, file: i.file || '', modified: i.modified || 0 }))),
       folder: folder.handle ? folder.handle.name : '',
@@ -499,7 +492,9 @@
       if (!m) { notice('error', file.name + ' has no proof data. Only PDFs saved from this tool can be reloaded.'); return; }
 
       const state = decodeState(m[1]);
-      const hasWork = cards().some(c => imagesOf(c).length || c.querySelector('[data-row]'));
+      // Anything entered? (every table always has an empty row, so look at the data)
+      const hasWork = cards().some(c => imagesOf(c).length) ||
+        window.BP.serializeOptions().some(o => o.materials.length || o.inserts.length || o.decorations.length || o.others.length);
       if (hasWork && !window.confirm('Replace the current proof with ' + file.name + '?')) return;
       if (!window.BP.ready()) await new Promise(r => document.addEventListener('bp:ready', r, { once: true }));
       restoreState(state, file.name);
@@ -524,7 +519,11 @@
     if (job.designer) setField('designer', job.designer);
     setTheme(state.theme || 'light');
 
-    window.BP.restoreOptions(state.options || [], state.custom);   // fires bp:restored
+    // Version 4 = the spec tables. Older PDFs used the previous editor, so
+    // only their job fields, page count and images come back.
+    const current = (state.v || 1) >= 4;
+    window.BP.restoreOptions(current ? state.options || [] : (state.options || []).map(() => ({})));   // fires bp:restored
+    if (!current) notice('warning', fileName + ' was saved with the previous option editor, so its specs couldn’t be loaded. The job details and images were.');
 
     // Images aren't in the PDF, only their labels, file names and modified
     // dates. Keep the list so a linked folder (or dropped files) can fill
@@ -809,6 +808,14 @@
     if (btn) setTheme(btn.dataset.footerTheme);
   });
 
+  // Page orientation (per option)
+  form.addEventListener('click', e => {
+    const btn = e.target.closest('.segmented__btn[data-orientation]');
+    if (!btn) return;
+    selected.dataset.orientation = btn.dataset.orientation;
+    render();   // applyOrientation → fitStage; then the images refit
+  });
+
   // Designer: remembered in this browser and filled in automatically, like
   // the MCS (same localStorage key, so the two tools share it when they're
   // served from the same address).
@@ -838,14 +845,28 @@
     renderPages();
   });
 
-  // Image labels are edited in place on the page
-  art.addEventListener('input', e => {
-    if (!e.target.matches('.proof-image__label')) return;
-    const image = imagesOf(selected).find(i => String(i.id) === e.target.closest('.proof-image').dataset.id);
-    image.label = e.target.textContent;
+  // Image labels are edited in place on the page (type or pick a suggestion).
+  // When you leave the field, the label is saved and the option's count
+  // column with the old name is renamed to match.
+  function commitLabel(input) {
+    const fig = input.closest('.proof-image');
+    const image = imagesOf(selected).find(i => String(i.id) === fig.dataset.id);
+    const label = input.value.trim() || image.label;   // can't be emptied
+    input.value = label;
+    fig.querySelector('.proof-image__label-text').textContent = label;
+    if (label === image.label) return;
+    window.BP.renameColumn(selected, image.label, label);
+    image.label = label;
+    render();
+  }
+  art.addEventListener('focusout', e => {
+    if (e.target.matches('.proof-image__label-input')) commitLabel(e.target);
   });
-  art.addEventListener('keydown', e => {
-    if (e.target.matches('.proof-image__label') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+  art.addEventListener('combobox:enter', e => {
+    if (!e.target.matches('.proof-image__label-combobox')) return;
+    window.Combobox.setValue(e.target, e.detail.value);
+    window.Combobox.reset(e.target, true);
+    e.target.querySelector('input').blur();   // → commitLabel
   });
 
   // Drop files anywhere: a proof PDF reloads that proof; images go on the page

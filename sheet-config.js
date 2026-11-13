@@ -15,9 +15,11 @@ window.SHEET_CONFIG = {
   // Tab names in the sheet (and matching data/<name>.csv snapshots).
   TABS: {
     materials: 'materials',
+    functionsLabels: 'functions_labels',   // function → image labels (Full Wrap → Exterior, Cover)
+    locationLabels: 'location_labels',     // image label suggestions + which ones hold inserts
     bindingTypes: 'binding_types',
     features: 'features',
-    sizes: 'Sizes',
+    sizes: 'sizes',
   },
   // Detail lists (e.g. bookcloth) are loaded from whatever tab name appears
   // in the materials tab's "Detail List" column — no config needed here.

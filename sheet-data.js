@@ -9,10 +9,14 @@
 // Exposes: window.loadSheetData() → Promise<{ source, data }>
 //   data.materials    [{ name, functions: [..], detailList }]
 //   data.functions    ['Front', 'Back', …]  (column order from the sheet)
+//   data.imageLabels  ['Exterior', 'Cover', 'Interior', …]  (location_labels: image label suggestions)
+//   data.locationLabels [{ label, holdsInserts }]  (location_labels; holds_inserts "x" → shown in Inserts by default)
+//   data.functionColumns ['Exterior', 'Cover', …]  (functions_labels headers)
+//   data.functionLabels { 'Full Wrap': ['Exterior', 'Cover'], … }  (which image a material's function goes on)
 //   data.bindingTypes [{ name, standard, folded, variable }]  (x columns → true/false)
-//   data.features     [{ name, type }]
-//   data.detailLists  { bookcloth: ['Majilite Attache Copper (50)', …] }  (search names)
-//   data.customerNames { bookcloth: { 'Majilite Attache Copper (50)': 'Majilite (50)' } }
+//   data.features     [{ name, type }]  (type: Decoration | Other)
+//   data.detailLists  { Bookcloth: ['Majilite Attache Copper (#50)', …] }  (search names)
+//   data.customerNames { Bookcloth: { 'Majilite Attache Copper (#50)': 'Majilite (#50)' } }
 //   data.sizes        [{ w, h, folded, flatW, flatH }]
 //   data.settings     { inchMarks: true|false }  (the "inch marks?" checkbox on the Sizes tab)
 
@@ -100,14 +104,18 @@
 
   async function loadFrom(useSheet) {
     const t = cfg.TABS;
-    const [matRows, bindRows, featRows, sizeRows] = await Promise.all([
+    const [matRows, labelRows, locationRows, bindRows, featRows, sizeRows] = await Promise.all([
       fetchTab(t.materials, useSheet),
+      fetchTab(t.functionsLabels, useSheet),
+      // optional: older copies of the sheet don't have this tab
+      fetchTab(t.locationLabels, useSheet).catch(() => null),
       fetchTab(t.bindingTypes, useSheet),
       fetchTab(t.features, useSheet),
       fetchTab(t.sizes, useSheet),
     ]);
 
-    // Every column between "Material" and "Detail List" is a function.
+    // Every column except "Material" and "Detail List" is a function
+    // (read by header name, so the column order doesn't matter).
     const functions = matRows[0].filter(h => h && h !== MATERIAL_COL && h !== DETAIL_COL);
 
     const materials = toRecords(matRows).map(r => ({
@@ -134,16 +142,36 @@
       });
     });
 
+    // functions_labels: first column = function, other headers = image labels,
+    // "x" = that function goes on that image.
+    const [labelHeader, ...labelBody] = labelRows;
+    const functionColumns = labelHeader.slice(1).filter(Boolean);
+    const functionLabels = {};
+    labelBody.forEach(r => {
+      functionLabels[r[0]] = functionColumns.filter(label => isX(r[labelHeader.indexOf(label)]));
+    });
+
+    // location_labels: Label, holds_inserts. Without the tab, the
+    // functions_labels headers are the labels and every one holds inserts.
+    const locationLabels = locationRows
+      ? toRecords(locationRows).filter(r => r.Label).map(r => ({ label: r.Label, holdsInserts: isX(r.holds_inserts) }))
+      : functionColumns.map(label => ({ label, holdsInserts: true }));
+    const imageLabels = locationLabels.map(l => l.label);
+
     return {
       materials,
       functions,
+      imageLabels,
+      locationLabels,
+      functionColumns,
+      functionLabels,
       bindingTypes: toRecords(bindRows).map(r => ({
         name: r['Binding Type'],
         standard: isX(r.standard),   // suggest flat (non-folded) sizes
         folded: isX(r.folded),       // suggest folded sizes
         variable: isX(r.variable),   // suggest "Variable" for insert count
       })),
-      features: toRecords(featRows).map(r => ({ name: r.Feature, type: r.Type || 'Feature' })),
+      features: toRecords(featRows).map(r => ({ name: r.Feature, type: r.Type || 'Other' })),
       detailLists,
       customerNames,
       sizes: readSizes(sizeRows),
